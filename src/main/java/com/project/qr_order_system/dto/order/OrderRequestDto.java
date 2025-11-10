@@ -1,0 +1,13 @@
+package com.project.qr_order_system.dto.order;
+
+import java.util.List;
+
+/**
+ * 신규 주문 생성 요청
+ */
+public class OrderRequestDto {
+    private Long storeId;
+    private Integer tableNumber; // takeout이면 null
+    private Long paymentCardId; // 결제에 사용할 카드id
+    private List<OrderItemRequestDto> orderItems;
+}
