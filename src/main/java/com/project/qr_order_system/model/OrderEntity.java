@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "order")
+@Table(name = "orders") // db에서 order by 인줄 알아서 변경
 public class OrderEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
