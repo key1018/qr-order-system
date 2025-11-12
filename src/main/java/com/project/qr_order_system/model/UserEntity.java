@@ -3,11 +3,13 @@ package com.project.qr_order_system.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 @Entity
 @Table(name = "users") // db에서 이미 user 현재 사용한 접속자를 가르켜서 변경
 @NoArgsConstructor
@@ -37,7 +39,6 @@ public class UserEntity {
     private List<OrderEntity> orders = new ArrayList<>();
 
     @Builder
-
     public UserEntity(Long id, String email, String password, String name, Role role, List<PaymentCardEntity> paymentCards, List<OrderEntity> orders) {
         this.id = id;
         this.email = email;
