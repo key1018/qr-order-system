@@ -34,28 +34,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws IOException, ServletException {
-        // 1. 요청 헤더에서 토큰 꺼내기
-        String token = resolveToken(request);
 
-        // 2. 토큰 검증
-        if (StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
-            // 3. 토큰이 유효할 경우, 토큰에서 이메일(사용자 식별 정보) 꺼내기
-            String email = tokenProvider.getEmailFromToken(token);
+        try {
+            // 1. 요청 헤더에서 토큰 꺼내기
+            String token = resolveToken(request);
 
-            // 4. 이메일로 DB에서 실제 사용자 정보(UserDetails) 조회
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+            // 2. 토큰 검증
+            if (StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
+                // 3. 토큰이 유효할 경우, 토큰에서 이메일(사용자 식별 정보) 꺼내기
+                String email = tokenProvider.getEmailFromToken(token);
 
-            // 5. (가장 중요) 인증된 사용자라는 '티켓' 생성
-            //    (사용자 정보, null, 권한)
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                // 4. 이메일로 DB에서 실제 사용자 정보(UserDetails) 조회
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
-            // 6. Spring Security의 '보관함'에 이 '티켓'을 저장
-            //    이제 이 요청은 '인증된 요청'으로 처리됨
-            // 즉, SecurityContextHolder에 인증 정보를 저장하면 Spring Security가 이 사용자를 인증된 사용자로 인식
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                // 5. (가장 중요) 인증된 사용자라는 '티켓' 생성
+                //    (사용자 정보, null, 권한)
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-            log.debug("Authenticated user: {}, setting security context", email);
+                // 6. Spring Security의 '보관함'에 이 '티켓'을 저장
+                //    이제 이 요청은 '인증된 요청'으로 처리됨
+                // 즉, SecurityContextHolder에 인증 정보를 저장하면 Spring Security가 이 사용자를 인증된 사용자로 인식
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                log.debug("Authenticated user: {}, setting security context", email);
+            }
+        } catch (Exception e) {
+            log.error("Error during authentication in security context: {}", e.getMessage());
         }
 
         // 7. 다음 필터로 요청/응답 전달

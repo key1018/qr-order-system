@@ -12,7 +12,9 @@ import java.util.List;
 @Getter
 @Entity
 @Table(name = "users") // db에서 이미 user 현재 사용한 접속자를 가르켜서 변경
+@AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,14 +40,21 @@ public class UserEntity {
     @OneToMany(mappedBy = "user")
     private List<OrderEntity> orders = new ArrayList<>();
 
-    @Builder
-    public UserEntity(Long id, String email, String password, String name, Role role, List<PaymentCardEntity> paymentCards, List<OrderEntity> orders) {
-        this.id = id;
-        this.email = email;
-        this.password = password;
-        this.name = name;
-        this.role = role;
-        this.paymentCards = paymentCards;
-        this.orders = orders;
-    }
+    // 사장님-매장 연결 -> N:1 관계 추가
+    // 한 명의 사장님(User)이 여러 개의 매장(Store)을 소유
+    @OneToMany(mappedBy = "owner")
+    private List<StoreEntity> ownedStores = new ArrayList<>();
+
+//    @Builder
+//    public UserEntity(Long id, String email, String password, String name, Role role, List<PaymentCardEntity> paymentCards, List<OrderEntity> orders) {
+//        this.id = id;
+//        this.email = email;
+//        this.password = password;
+//        this.name = name;
+//        this.role = role;
+//        this.paymentCards = paymentCards;
+//        this.orders = orders;
+//    }
 }
+
+

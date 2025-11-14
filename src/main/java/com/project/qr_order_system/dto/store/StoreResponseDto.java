@@ -2,8 +2,10 @@ package com.project.qr_order_system.dto.store;
 
 import com.project.qr_order_system.dto.product.ProductResponseDto;
 import com.project.qr_order_system.model.StoreType;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -11,17 +13,20 @@ import java.util.List;
  * 매장 정보 조회 응답
  */
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class StoreResponseDto {
     private Long id;
     private String storeName;
     private StoreType storeType;
-    private List<ProductResponseDto> products; // 매장 상품 목록
+//    private List<ProductResponseDto> products; // 매장 상품 목록
 
-    @Builder
-    public StoreResponseDto(Long id, String storeName, StoreType storeType, List<ProductResponseDto> products) {
-        this.id = id;
-        this.storeName = storeName;
-        this.storeType = storeType;
-        this.products = products;
-    }
+//    @Builder
+//    public StoreResponseDto(Long id, String storeName, StoreType storeType, List<ProductResponseDto> products) {
+//        this.id = id;
+//        this.storeName = storeName;
+//        this.storeType = storeType;
+//        this.products = products;
+//    }
 }

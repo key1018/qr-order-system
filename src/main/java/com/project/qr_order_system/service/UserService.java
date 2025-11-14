@@ -27,7 +27,6 @@ public class UserService {
      */
     @Transactional
     public void signup(UserSignRequestDto requestDto) {
-
         // 비밀번호 암호화
         String password = passwordEncoder.encode(requestDto.getPassword());
 
@@ -46,7 +45,6 @@ public class UserService {
      */
     @Transactional
     public UserLoginResponseDto login(UserLoginRequestDto requestDto) {
-
         UserEntity user = userRepository.findByEmail(requestDto.getEmail())
                 .orElseThrow(()-> new IllegalStateException("가입되지 않은 이메일입니다."));
 
@@ -58,7 +56,6 @@ public class UserService {
         // jwt 토큰 생성
         String accessToken = jwtTokenPovider.createNewAccessToken(user);
         String refreshToken = jwtTokenPovider.refreshAccessToken(user);
-
         return new UserLoginResponseDto(accessToken, refreshToken);
     }
 
