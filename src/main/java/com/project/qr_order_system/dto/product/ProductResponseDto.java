@@ -11,13 +11,17 @@ public class ProductResponseDto {
     private Long id;
     private String productName;
     private Integer price;
+    private Integer stock;
     private String imageUrl;
+    private String available;
 
     @Builder
-    public ProductResponseDto(Long id, String productName, Integer price, String imageUrl) {
+    public ProductResponseDto(Long id, String productName, Integer price, Integer stock, String imageUrl, String available) {
         this.id = id;
         this.productName = productName;
         this.price = price;
+        this.stock = stock;
         this.imageUrl = imageUrl;
+        this.available = available;
     }
 }

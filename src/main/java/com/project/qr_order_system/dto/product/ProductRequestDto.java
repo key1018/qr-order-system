@@ -1,5 +1,6 @@
 package com.project.qr_order_system.dto.product;
 
+import ch.qos.logback.core.pattern.color.BoldWhiteCompositeConverter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -13,4 +14,5 @@ public class ProductRequestDto {
     private Integer price;
     private Integer stock;
     private String imageUrl;
+    private String available;
 }

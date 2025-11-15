@@ -1,9 +1,16 @@
 package com.project.qr_order_system.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "product")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProductEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,6 +26,8 @@ public class ProductEntity {
     private Integer stock;
 
     private String imageUrl; // 상품 사진 URL
+
+    private String available; // 상품 판매 유무 (판매함 = 'Y' , 판매안함 = 'N')
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="store_id")

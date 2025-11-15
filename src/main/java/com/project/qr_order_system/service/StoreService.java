@@ -49,4 +49,26 @@ public class StoreService {
             throw new IllegalArgumentException("매장을 생성할 수 없습니다.");
         }
     }
+
+    /**
+     * 매장 관리자가 맞는지 확인
+     */
+    @Transactional
+    public void validateStoreOwner(String email, Long storeId){
+        // 매장 정보 조회
+        StoreEntity store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalThreadStateException("매장 정보가 없습니다."));
+
+        if(store.getOwner() == null){
+            throw new IllegalArgumentException("매장 소유주가 없습니다.");
+        }
+
+        if(!store.getOwner().getEmail().equals(email)){
+            throw new SecurityException("매장에 대한 접근 권한이 없습니다.");
+        }
+
+        log.info("매장 소유주 확인: user={}, storeId={}", email, storeId);
+    }
+
+
 }

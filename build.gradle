@@ -41,6 +41,10 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+	// QR 코드 생성
+	implementation 'com.google.zxing:core:3.5.3'
+	// QR 코드에 대한 이미지 생성
+	implementation 'com.google.zxing:javase:3.5.3'
 }
 
 tasks.named('test') {
