@@ -32,4 +32,12 @@ public class ProductEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="store_id")
     private StoreEntity store;
+
+    public void removeStock(Integer stock) {
+        this.stock -= stock;
+        if(this.stock < 0) {
+            new IllegalArgumentException("재고가 부족합니다. (상품명 : "
+                    + this.productName + " , 현재 재고 : " + this.stock + ")");
+        }
+    }
 }

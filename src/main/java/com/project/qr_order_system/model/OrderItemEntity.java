@@ -1,9 +1,16 @@
 package com.project.qr_order_system.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.stereotype.Service;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "orderItem")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderItemEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,5 +25,7 @@ public class OrderItemEntity {
     private ProductEntity product;
 
     private Integer quantity; // 고객이 주문한 수량
-    private Integer totalprice; // 주문 당시 가격(총 가격)
+    private Integer orderPrice; // 상품 주문 수량
+    private Integer totalPrice; // 주문 당시 가격(총 가격)
+
 }

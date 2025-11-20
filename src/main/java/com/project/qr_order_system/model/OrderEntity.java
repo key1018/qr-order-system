@@ -1,14 +1,22 @@
 package com.project.qr_order_system.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
+@Setter
+@Getter
 @Entity
 @Table(name = "orders") // db에서 order by 인줄 알아서 변경
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +39,7 @@ public class OrderEntity {
     private Integer tableNumber;
 
     @Column(nullable = false)
-    private Integer totalprice;
+    private Integer totalPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -42,6 +50,5 @@ public class OrderEntity {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItemEntity> orderItems = new ArrayList<>();
-
 
 }

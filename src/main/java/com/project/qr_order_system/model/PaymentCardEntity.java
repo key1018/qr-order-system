@@ -1,9 +1,15 @@
 package com.project.qr_order_system.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "paymentCard")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PaymentCardEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

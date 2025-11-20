@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.stream.Collectors;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class ProductService {
     /**
      * 매장 상품 등록
      */
+    @Transactional
     public List<ProductResponseDto> createProduct(List<ProductRequestDto> requestDtoList, Long storeId, String email) {
 
         // 관리자 확인
@@ -62,6 +64,7 @@ public class ProductService {
                         .id(savedProduct.getId())
                         .productName(savedProduct.getProductName())
                         .price(savedProduct.getPrice())
+                        .stock(savedProduct.getStock())
                         .imageUrl(savedProduct.getImageUrl())
                         .available(savedProduct.getAvailable())
                         .build())
@@ -72,6 +75,7 @@ public class ProductService {
      * 상품 조회 (관리자용)
      * available in ('Y','N')
      */
+    @Transactional
     public List<ProductResponseDto> retrieveProductListForAdmin(Long storeId, String email) {
         // 매장 확인
         StoreEntity store = storeRepository.findById(storeId)
@@ -102,6 +106,7 @@ public class ProductService {
      * 상품 조회 (고객용)
      * available = 'Y'
      */
+    @Transactional
     public List<ProductResponseDto> retrieveProductListForUser(Long storeId, String email, String available) {
         // 매장 확인
         StoreEntity store = storeRepository.findById(storeId)
@@ -120,5 +125,25 @@ public class ProductService {
                         .imageUrl(productList.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 상품 재고 감소
+     */
+    @Transactional
+    public void removeStock(Long storeId, Long productId, Integer quantity) {
+        // 매장 확인
+        StoreEntity store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("매장을 찾을 수 업습니다."));
+
+        // 상품 확인
+        ProductEntity product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 업습니다."));
+
+        if (!product.getStore().getId().equals(storeId)) {
+            throw new IllegalArgumentException("해당 상품은 이 매장의 상품이 아닙니다.");
+        }
+
+        product.removeStock(quantity);
     }
 }
