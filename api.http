@@ -1,0 +1,160 @@
+### 공통 변수 설정
+@host = http://localhost:8081
+@contentType = application/json
+
+### ==========================================
+### 1. 관리자(사장님) 시나리오
+### ==========================================
+
+### 1-1. 관리자 로그인 (토큰 자동 저장)
+POST {{host}}/qrorder/users/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@qrorder.com",
+  "password": "admin123!"
+}
+
+> {%
+    // 응답에서 accessToken을 꺼내서 'adminToken'이라는 변수에 저장
+    client.global.set("adminToken", response.body.accessToken);
+    client.log("관리자 토큰이 저장되었습니다: " + response.body.accessToken);
+%}
+
+### 1-2. 매장 생성 (관리자)
+POST {{host}}/qrorder/admin/stores/createStore
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+    "storeName": "testStore",
+    "storeType" : "TAKEOUT"
+}
+
+> {%
+    // 생성된 매장 ID를 'storeId' 변수에 저장 (나중에 상품등록 등에 사용)
+    client.global.set("storeId", response.body.id);
+    client.log("생성된 매장 ID: " + response.body.id);
+%}
+
+### 1-3. QR 코드 이미지 생성 (관리자)
+# 결과창에서 'View Image'를 누르면 QR 코드가 보입니다.
+GET {{host}}/qrorder/admin/stores/{{storeId}}/qr-code
+Authorization: Bearer {{adminToken}}
+
+### 1-4. 상품 등록 (관리자)
+POST {{host}}/qrorder/admin/product/{{storeId}}/createproduct
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+[
+  {
+    "productName": "아메리카노",
+    "price": 4500,
+    "stock": 100,
+    "available" : "Y"
+  },
+  {
+    "productName": "카페라떼",
+    "price": 5000,
+    "stock": 50,
+    "available" : "Y",
+    "imageUrl": "http://image.url/latte.png"
+  },
+  {
+    "productName": "카푸치노",
+    "price": 1000,
+    "stock": 0,
+    "available" : "N"
+  }
+]
+
+### ==========================================
+### 2. 고객 시나리오
+### ==========================================
+
+### 2-1. 고객 회원가입 (테스트용)
+POST {{host}}/qrorder/users/signup
+Content-Type: {{contentType}}
+
+{
+  "email": "test@qrorder.com",
+  "password": "1234",
+  "name": "김손님"
+}
+
+### 2-2. 고객 로그인 (토큰 자동 저장)
+POST {{host}}/qrorder/users/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@qrorder.com",
+  "password": "1234"
+}
+
+> {%
+    client.global.set("userToken", response.body.accessToken);
+    client.log("유저 토큰이 저장되었습니다.");
+%}
+
+### 2-3. 임시 카드 등록 (고객)
+POST {{host}}/qrorder/users/card/registerCard
+Content-Type: {{contentType}}
+Authorization: Bearer {{userToken}}
+
+{
+    "cardName" : "내카드"
+}
+
+> {%
+    client.global.set("cardId", response.body.id); // 응답값에 id가 있다고 가정 (String 파싱 필요할 수 있음)
+%}
+
+### 2-4. 주문 생성 (고객)
+POST {{host}}/qrorder/users/orders/createOrders
+Content-Type: {{contentType}}
+Authorization: Bearer {{userToken}}
+
+{
+  "storeId": {{storeId}},
+  "tableNumber": null,
+  "paymentCardId": {{cardId}},
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ]
+}
+
+> {%
+    // 응답으로 온 orderId를 잡아서 변수에 저장
+    client.global.set("orderId", response.body.orderId);
+    client.log("생성된 주문 ID: " + response.body.orderId);
+%}
+
+### ==========================================
+### 3. 주문 처리 시나리오 (관리자)
+### ==========================================
+
+### 3-1. 주문 목록 조회 전체
+GET {{host}}/qrorder/admin/orders/{{storeId}}/orderList
+Authorization: Bearer {{adminToken}}
+
+### 3-2. 주문 목록 조회 (상태별, 접수 대기중인 것만)
+GET {{host}}/qrorder/admin/orders/{{storeId}}/orderList?status=ORDERED
+Authorization: Bearer {{adminToken}}
+
+### 3-3. 주문 알림 구독 (SSE)
+# (주의: 이 요청은 계속 로딩 상태로 유지됩니다. Stop 버튼을 눌러야 종료됨)
+GET {{host}}/qrorder/admin/notifications/subscribe/{{storeId}}
+Authorization: Bearer {{adminToken}}
+
+### 3-3. 주문 승낙 (재고 차감)
+# {orderId} 부분은 3-1 조회 결과나 알림에서 확인한 ID를 직접 입력하세요.
+POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/acceptOrders
+Authorization: Bearer {{adminToken}}

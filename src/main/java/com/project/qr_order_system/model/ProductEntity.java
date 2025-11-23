@@ -1,8 +1,10 @@
 package com.project.qr_order_system.model;
 
+import com.project.qr_order_system.exception.OutOfStockException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.transaction.annotation.Transactional;
 
 @Getter
 @Setter
@@ -33,11 +35,12 @@ public class ProductEntity {
     @JoinColumn(name="store_id")
     private StoreEntity store;
 
-    public void removeStock(Integer stock) {
-        this.stock -= stock;
-        if(this.stock < 0) {
-            new IllegalArgumentException("재고가 부족합니다. (상품명 : "
+    public void removeStock(Integer quantity) {
+        int restStock = this.stock - quantity;
+        if(restStock < 0) {
+            throw new OutOfStockException("재고가 부족합니다. (상품명 : "
                     + this.productName + " , 현재 재고 : " + this.stock + ")");
         }
+        this.stock = restStock;
     }
 }
