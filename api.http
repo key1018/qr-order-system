@@ -151,10 +151,19 @@ Authorization: Bearer {{adminToken}}
 
 ### 3-3. 주문 알림 구독 (SSE)
 # (주의: 이 요청은 계속 로딩 상태로 유지됩니다. Stop 버튼을 눌러야 종료됨)
-GET {{host}}/qrorder/admin/notifications/subscribe/{{storeId}}
+GET {{host}}/qrorder/admin/orders/notifications/subscribe/{{storeId}}
 Authorization: Bearer {{adminToken}}
 
 ### 3-3. 주문 승낙 (재고 차감)
 # {orderId} 부분은 3-1 조회 결과나 알림에서 확인한 ID를 직접 입력하세요.
 POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/acceptOrders
 Authorization: Bearer {{adminToken}}
+
+
+### ==========================================
+### 4. 주문 과정 시나리오 (고객)
+### ==========================================
+
+### 4-1. 주문 승낙 후 대기 구독 (SSE)
+GET {{host}}/qrorder/user/orders/notifications/subscribe/{{storeId}}/{{orderId}}
+Authorization: Bearer {{userToken}}

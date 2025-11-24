@@ -3,6 +3,7 @@ package com.project.qr_order_system.service;
 import com.project.qr_order_system.dto.order.OrderItemResponseDto;
 import com.project.qr_order_system.dto.order.OrderRequestDto;
 import com.project.qr_order_system.dto.order.OrderResponseDto;
+import com.project.qr_order_system.dto.order.OrderStatusUpdateDto;
 import com.project.qr_order_system.model.*;
 import com.project.qr_order_system.persistence.*;
 import lombok.AllArgsConstructor;
@@ -109,6 +110,24 @@ public class OrderService {
 
             product.removeStock(orderItem.getQuantity());
         }
+
+        OrderResponseDto responseDto = getOrderResponseDto(order);
+
+        // 내 앞 대기 인원수 계산
+        long watingP = orderRepository.countByStoreIdAndStatusAndIdLessThan(storeId,order.getStatus(),order.getId());
+
+        // 예상 대기 시간 계산 (한 명당 소요시간 5분으로 가정함)
+        int watingM = (int)(watingP + 1) * 5;
+
+        OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
+                .orderId(order.getId())
+                .orderStatus(order.getStatus())
+                .waitingPosition((int)watingP)
+                .waitingTime(watingM)
+                .build();
+
+        // 고객에게 실시간 알림 전송
+        notificationService.sendCustomerOrderAlert(order.getId(), updateDto);
 
         return getOrderResponseDto(order);
     }
