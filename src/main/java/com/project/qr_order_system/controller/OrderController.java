@@ -40,6 +40,15 @@ public class OrderController {
     }
 
     /**
+     * 주문 완료 (관리자용)
+     */
+    @PostMapping("/admin/orders/{storeId}/{orderId}/completeOrders")
+    public ResponseEntity<String> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
+        orderService.completeOrder(storeId, orderId, principal.getName());
+        return ResponseEntity.ok("조리 완료");
+    }
+
+    /**
      * 주문 목록 조회 (전체/상태별) : 관리자용
      */
     @GetMapping("/admin/orders/{storeId}/orderList")

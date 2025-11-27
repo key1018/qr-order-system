@@ -133,6 +133,71 @@ public class OrderService {
     }
 
     /**
+     * 주문 조리 완료 (관리자용)
+     * 고객한테 완료 안내 보내기
+     */
+    @Transactional
+    public void completeOrder(Long storeId, Long orderId, String email) {
+
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 내역이 없습니다."));
+
+        validateStoreOwner(storeId, email);
+
+        if(!order.getStatus().equals(OrderStatus.IN_PROGRESS)) {
+            throw new IllegalArgumentException("조리중인 주문 건만 완료 가능합니다.");
+        }
+
+        // 주문 완료 (주문 상태 변경)
+        order.setStatus(OrderStatus.READY);
+
+        // 고객한테 안내 보내기
+        OrderStatusUpdateDto completeDto = OrderStatusUpdateDto.builder()
+                .orderId(order.getId())
+                .orderStatus(order.getStatus())
+                .waitingPosition(0) // 대기 없음
+                .waitingTime(0) // 대기 없음
+                .build();
+
+        // 고객에게 실시간 알림 전송
+        notificationService.sendCustomerOrderAlert(order.getId(), completeDto);
+
+        // 뒷사람 대기인원,대기시간 줄이기
+        updateBackWaitingPositionAndTime(storeId,email);
+    }
+
+    /**
+     * 뒷사람 대기인원,대기시간 줄이기 (관리자용)
+     */
+    @Transactional
+    public void updateBackWaitingPositionAndTime(Long storeId, String email) {
+
+        validateStoreOwner(storeId, email);
+
+        // STATUS : IN_PROGRESS 중인 것만 조회
+        List<OrderEntity> orderLists = orderRepository.findByStoreIdAndStatus(storeId, OrderStatus.IN_PROGRESS,Sort.by(Sort.Direction.ASC,"createdAt"));
+
+        for(OrderEntity orderEntity : orderLists) {
+            // 각 주문 별로 내 앞의 인원 수 재계산
+            long watingP = orderRepository.countByStoreIdAndStatusAndIdLessThan(storeId,OrderStatus.IN_PROGRESS, orderEntity.getId());
+
+            // 각 주문 별로 내 앞의 대기 시간 재계산
+            int watingM = (int)(watingP + 1) * 5;
+
+            // 고객한테 다시 안내 보내기
+            OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
+                    .orderId(orderEntity.getId())
+                    .orderStatus(orderEntity.getStatus())
+                    .waitingPosition((int)watingP)
+                    .waitingTime(watingM)
+                    .build();
+
+            // 고객에게 실시간 알림 전송
+            notificationService.sendCustomerOrderAlert(orderEntity.getId(), updateDto);
+        }
+    }
+
+    /**
      * 주문 목록 조회 (전체) : 관리자용
      */
     @Transactional(readOnly = true)
