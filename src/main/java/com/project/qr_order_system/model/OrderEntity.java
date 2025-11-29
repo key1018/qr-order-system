@@ -45,6 +45,8 @@ public class OrderEntity {
     @Column(nullable = false)
     private OrderStatus status; // 주문 상태
 
+    private String cancelReason; // 취소/거절 사유
+
     @CreatedDate
     private LocalDateTime createdAt;
 

@@ -146,4 +146,24 @@ public class ProductService {
 
         product.removeStock(quantity);
     }
+
+    /**
+     * 상품 재고 복구
+     */
+    @Transactional
+    public void restoreStock(Long storeId, Long productId, Integer quantity) {
+        // 매장 확인
+        StoreEntity store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("매장을 찾을 수 업습니다."));
+
+        // 상품 확인
+        ProductEntity product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 업습니다."));
+
+        if (!product.getStore().getId().equals(storeId)) {
+            throw new IllegalArgumentException("해당 상품은 이 매장의 상품이 아닙니다.");
+        }
+
+        product.restoreStock(quantity);
+    }
 }

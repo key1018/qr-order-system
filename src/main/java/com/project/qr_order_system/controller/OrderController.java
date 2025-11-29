@@ -1,12 +1,15 @@
 package com.project.qr_order_system.controller;
 
+import com.project.qr_order_system.dto.order.OrderRejectRequestDto;
 import com.project.qr_order_system.dto.order.OrderRequestDto;
 import com.project.qr_order_system.dto.order.OrderResponseDto;
 import com.project.qr_order_system.model.OrderStatus;
+import com.project.qr_order_system.model.RejectReason;
 import com.project.qr_order_system.service.OrderService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.query.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +39,20 @@ public class OrderController {
     @PostMapping("/users/orders/{storeId}/{orderId}/cancelOrders")
     public ResponseEntity<OrderResponseDto> cancelOrder(@PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.cancelOrder(orderId, principal.getName());
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 주문 취소 (관리자용)
+     */
+    @PostMapping("/admin/orders/{storeId}/{orderId}/rejectOrders")
+    public ResponseEntity<OrderResponseDto> rejectOrder(
+            @PathVariable("storeId") Long storeId,
+            @PathVariable("orderId") Long orderId,
+            Principal principal,
+            @RequestBody OrderRejectRequestDto rejectReason
+            ) {
+        OrderResponseDto responseDto = orderService.rejectOrder(storeId, orderId, principal.getName(), rejectReason.getReason());
         return ResponseEntity.ok(responseDto);
     }
 

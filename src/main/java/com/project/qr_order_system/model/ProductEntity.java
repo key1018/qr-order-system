@@ -43,4 +43,9 @@ public class ProductEntity {
         }
         this.stock = restStock;
     }
+
+    public void restoreStock(Integer quantity) {
+        int restStock = this.stock + quantity;
+        this.stock = restStock;
+    }
 }

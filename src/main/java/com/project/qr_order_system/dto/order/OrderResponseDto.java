@@ -20,11 +20,12 @@ public class OrderResponseDto {
     private Integer totalPrice;
     private LocalDateTime createAt;
     private String usedCardName;
+    private String cancelReason;
     private List<OrderItemResponseDto> orderItems;
 
     @Builder
-    public OrderResponseDto(Long orderId, StoreType storeType, Integer tableNumber, OrderStatus orderStatus,
-                            Integer totalPrice, LocalDateTime createAt, String usedCardName, List<OrderItemResponseDto> orderItems) {
+
+    public OrderResponseDto(Long orderId, StoreType storeType, Integer tableNumber, OrderStatus orderStatus, Integer totalPrice, LocalDateTime createAt, String usedCardName, String cancelReason, List<OrderItemResponseDto> orderItems) {
         this.orderId = orderId;
         this.storeType = storeType;
         this.tableNumber = tableNumber;
@@ -32,6 +33,7 @@ public class OrderResponseDto {
         this.totalPrice = totalPrice;
         this.createAt = createAt;
         this.usedCardName = usedCardName;
+        this.cancelReason = cancelReason;
         this.orderItems = orderItems;
     }
 }

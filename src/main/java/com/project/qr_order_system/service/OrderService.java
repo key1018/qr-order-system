@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,6 +156,7 @@ public class OrderService {
         // 고객한테 안내 보내기
         OrderStatusUpdateDto completeDto = OrderStatusUpdateDto.builder()
                 .orderId(order.getId())
+                
                 .orderStatus(order.getStatus())
                 .waitingPosition(0) // 대기 없음
                 .waitingTime(0) // 대기 없음
@@ -180,30 +182,29 @@ public class OrderService {
         // STATUS : IN_PROGRESS 중인 것만 조회
         List<OrderEntity> orderLists = orderRepository.findByStoreIdAndStatus(storeId, OrderStatus.IN_PROGRESS,Sort.by(Sort.Direction.ASC,"createdAt"));
 
-        for(OrderEntity orderEntity : orderLists) {
-            // 각 주문 별로 내 앞의 인원 수 재계산
-            long watingP = orderRepository.countByStoreIdAndStatusAndIdLessThan(storeId,OrderStatus.IN_PROGRESS, orderEntity.getId());
+        for(int i = 0; i < orderLists.size(); i++){
+            OrderEntity orderEntity = orderLists.get(i);
 
-            // 각 주문 별로 내 앞의 대기 시간 재계산
-            int watingM = (int)(watingP + 1) * 5;
+            int watingM = (i + 1) * 5;
 
             // 고객한테 다시 안내 보내기
             OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
                     .orderId(orderEntity.getId())
                     .orderStatus(orderEntity.getStatus())
-                    .waitingPosition((int)watingP)
+                    .waitingPosition(i)
                     .waitingTime(watingM)
                     .build();
 
             // 고객에게 실시간 알림 전송
             notificationService.sendCustomerOrderAlert(orderEntity.getId(), updateDto);
         }
+
     }
 
     /**
      * 주문 취소 (고객용)
      * 손님의 변심으로 인한 취소
-     * 조리 전 (IN_PROGRESS 전) -> 재고 감소 X
+     * 조리 전 (ORDERED 상태) -> 재고 감소 X
      */
     @Transactional
     public OrderResponseDto cancelOrder(Long orderId, String email) {
@@ -215,6 +216,7 @@ public class OrderService {
         }
 
         cancelOrder.setStatus(OrderStatus.CANCELED);
+        cancelOrder.setCancelReason(RejectReason.CUSTOMER_REQUEST_BEFORE_COOKING.getDescription());
 
         OrderResponseDto responseDto = getOrderResponseDto(cancelOrder);
 
@@ -227,10 +229,72 @@ public class OrderService {
                 .orderStatus(cancelOrder.getStatus())
                 .waitingPosition(0)
                 .waitingTime(0)
+                .cancelReason(cancelOrder.getCancelReason())
                 .build();
 
         // 고객에게 실시간 알림 전송
         notificationService.sendCustomerOrderAlert(cancelOrder.getId(), updateDto);
+
+        log.info("고객 주문 취소 완료: OrderId={}", orderId);
+
+        return responseDto;
+    }
+
+    /**
+     * 주문 취소 (관리자용)
+     * 손님의 변심 / 재료 소진 및 폐기 / 가게 사정 등으로 인한 취소
+     * ORDERED / IN_PROGRESS / READY 상태
+     * => 상황에 따라 재고 감소/복구됨
+     */
+    @Transactional
+    public OrderResponseDto rejectOrder(Long storeId, Long orderId, String email, RejectReason reason) {
+
+        validateStoreOwner(storeId, email);
+
+        OrderEntity rejectOrder = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 내역을 확인할 수 없습니다."));
+
+        if (rejectOrder.getStatus() == OrderStatus.CANCELED || rejectOrder.getStatus() == OrderStatus.REJECTED) {
+            throw new IllegalStateException("이미 완료되거나 취소된 주문입니다.");
+        }
+
+        // 조리 중 / 완료시 취소
+        if(rejectOrder.getStatus().equals(OrderStatus.IN_PROGRESS) || rejectOrder.getStatus().equals(OrderStatus.READY)) {
+
+            if(reason.isRestoreStock()){
+                // IN_PROGRESS 상태지만 실제 조리가 들어가기 전 (재료 복구)
+                for(OrderItemEntity orderItem : rejectOrder.getOrderItems()) {
+                    ProductEntity product = orderItem.getProduct();
+                    product.restoreStock(orderItem.getQuantity());
+                }
+            }
+        }
+
+        if("reject".equals(reason.getType())){
+            rejectOrder.setStatus(OrderStatus.REJECTED);
+        } else {
+            rejectOrder.setStatus(OrderStatus.CANCELED);
+        }
+        rejectOrder.setCancelReason(reason.getDescription());
+
+        OrderResponseDto responseDto = getOrderResponseDto(rejectOrder);
+
+        // 고객한테 취소 안내 보내기
+        OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
+                .orderId(rejectOrder.getId())
+                .orderStatus(rejectOrder.getStatus())
+                .waitingPosition(0)
+                .waitingTime(0)
+                .cancelReason(rejectOrder.getCancelReason())
+                .build();
+
+        // 고객에게 실시간 알림 전송
+        notificationService.sendCustomerOrderAlert(rejectOrder.getId(), updateDto);
+
+        // 대기열 갱신 (중간에 빠졌으므로 뒷사람 갱신 필요)
+        if (rejectOrder.getStatus() == OrderStatus.CANCELED || rejectOrder.getStatus() == OrderStatus.REJECTED) {
+            updateBackWaitingPositionAndTime(storeId, email);
+        }
 
         log.info("고객 주문 취소 완료: OrderId={}", orderId);
 
@@ -324,6 +388,7 @@ public class OrderService {
                 .tableNumber(savedOrder.getTableNumber())
                 .orderStatus(savedOrder.getStatus())
                 .totalPrice(savedOrder.getTotalPrice())
+                .cancelReason(savedOrder.getCancelReason())
                 .createAt(savedOrder.getCreatedAt())
                 .usedCardName(savedOrder.getUsedCardName())
                 .orderItems(orderItemList)
