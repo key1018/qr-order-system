@@ -84,7 +84,7 @@ public class OrderService {
         OrderResponseDto responseDto = getOrderResponseDto(savedOrder);
 
         // 관리자에게 실시간 알림 전송
-        notificationService.sendOrderAlert(store.getId(), responseDto);
+        notificationService.sendOrderAlert(store.getId(),"new-order", responseDto);
 
         return responseDto;
     }
@@ -137,7 +137,7 @@ public class OrderService {
      * 고객한테 완료 안내 보내기
      */
     @Transactional
-    public void completeOrder(Long storeId, Long orderId, String email) {
+    public OrderResponseDto completeOrder(Long storeId, Long orderId, String email) {
 
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문 내역이 없습니다."));
@@ -150,6 +150,7 @@ public class OrderService {
 
         // 주문 완료 (주문 상태 변경)
         order.setStatus(OrderStatus.READY);
+        OrderResponseDto responseDto = getOrderResponseDto(order);
 
         // 고객한테 안내 보내기
         OrderStatusUpdateDto completeDto = OrderStatusUpdateDto.builder()
@@ -164,6 +165,8 @@ public class OrderService {
 
         // 뒷사람 대기인원,대기시간 줄이기
         updateBackWaitingPositionAndTime(storeId,email);
+
+        return responseDto;
     }
 
     /**
@@ -195,6 +198,43 @@ public class OrderService {
             // 고객에게 실시간 알림 전송
             notificationService.sendCustomerOrderAlert(orderEntity.getId(), updateDto);
         }
+    }
+
+    /**
+     * 주문 취소 (고객용)
+     * 손님의 변심으로 인한 취소
+     * 조리 전 (IN_PROGRESS 전) -> 재고 감소 X
+     */
+    @Transactional
+    public OrderResponseDto cancelOrder(Long orderId, String email) {
+
+        OrderEntity cancelOrder = validateCustomerOrder(orderId, email);
+
+        if(!cancelOrder.getStatus().equals(OrderStatus.ORDERED)) {
+            throw new IllegalArgumentException("이미 접수된 주문은 취소할 수 없습니다. 매장에 문의하세요.");
+        }
+
+        cancelOrder.setStatus(OrderStatus.CANCELED);
+
+        OrderResponseDto responseDto = getOrderResponseDto(cancelOrder);
+
+        // 관리자에게 취소 안내 보내기
+        notificationService.sendOrderAlert(cancelOrder.getStore().getId(), "cancel-order", responseDto);
+
+        // 고객한테 취소 안내 보내기
+        OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
+                .orderId(cancelOrder.getId())
+                .orderStatus(cancelOrder.getStatus())
+                .waitingPosition(0)
+                .waitingTime(0)
+                .build();
+
+        // 고객에게 실시간 알림 전송
+        notificationService.sendCustomerOrderAlert(cancelOrder.getId(), updateDto);
+
+        log.info("고객 주문 취소 완료: OrderId={}", orderId);
+
+        return responseDto;
     }
 
     /**
@@ -245,6 +285,23 @@ public class OrderService {
         if (!store.getOwner().getEmail().equals(email)) {
             throw new SecurityException("해당 매장의 관리자가 아닙니다.");
         }
+    }
+
+    /**
+     * 고객 주문 확인용 메서드
+     */
+    private OrderEntity validateCustomerOrder(Long orderId, String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 내역을 찾을 수 없습니다."));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new SecurityException("본인의 주문만 취소할 수 있습니다.");
+        }
+
+        return order;
     }
 
     /**

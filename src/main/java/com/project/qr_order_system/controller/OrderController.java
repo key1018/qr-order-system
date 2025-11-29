@@ -31,6 +31,15 @@ public class OrderController {
     }
 
     /**
+     * 주문 취소 (고객용)
+     */
+    @PostMapping("/users/orders/{storeId}/{orderId}/cancelOrders")
+    public ResponseEntity<OrderResponseDto> cancelOrder(@PathVariable("orderId") Long orderId, Principal principal) {
+        OrderResponseDto responseDto = orderService.cancelOrder(orderId, principal.getName());
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
      * 주문 승낙 (관리자용)
      */
     @PostMapping("/admin/orders/{storeId}/{orderId}/acceptOrders")
@@ -43,9 +52,9 @@ public class OrderController {
      * 주문 완료 (관리자용)
      */
     @PostMapping("/admin/orders/{storeId}/{orderId}/completeOrders")
-    public ResponseEntity<String> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
-        orderService.completeOrder(storeId, orderId, principal.getName());
-        return ResponseEntity.ok("조리 완료");
+    public ResponseEntity<OrderResponseDto> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
+        OrderResponseDto responseDto = orderService.completeOrder(storeId, orderId, principal.getName());
+        return ResponseEntity.ok(responseDto);
     }
 
     /**

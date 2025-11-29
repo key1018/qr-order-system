@@ -77,12 +77,12 @@ public class NotificationService {
      * => 특정 매장(storeId)을 구독 중인 관리자에게 새로운 주문 발생 이벤트를 SSE로 전송하고,
      *    전송 실패 시 해당 연결을 정리하는 메소드
      */
-    public void sendOrderAlert(Long storeId, OrderResponseDto responseDto){
+    public void sendOrderAlert(Long storeId, String eventName, OrderResponseDto responseDto){
         SseEmitter emitter = emitterMap.get(storeId);
         if(emitter != null){
             try{
                 // "new-order"라는 이름의 이벤트 발송
-                emitter.send(SseEmitter.event().name("new-order").data(responseDto));
+                emitter.send(SseEmitter.event().name(eventName).data(responseDto));
             }catch (IOException e){
                 emitterMap.remove(storeId); // 오류발생 시 연결 제거
                 // 알림 전송 실패 -> 관리자가 주문조회API로 확인해야됨
