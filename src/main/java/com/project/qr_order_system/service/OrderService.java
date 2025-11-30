@@ -31,6 +31,13 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final NotificationService notificationService;
 
+
+    // =================================================================
+    // 고객 관련 비즈니스 로직
+    // 주문 등록, 취소, 조회
+    // =================================================================
+
+
     /**
      * 주문 등록 (고객용)
      */
@@ -89,6 +96,85 @@ public class OrderService {
 
         return responseDto;
     }
+
+
+    /**
+     * 주문 취소 (고객용)
+     * 손님의 변심으로 인한 취소
+     * 조리 전 (ORDERED 상태) -> 재고 감소 X
+     */
+    @Transactional
+    public OrderResponseDto cancelOrder(Long orderId, String email) {
+
+        OrderEntity cancelOrder = validateCustomerOrder(orderId, email);
+
+        if(!cancelOrder.getStatus().equals(OrderStatus.ORDERED)) {
+            throw new IllegalArgumentException("이미 접수된 주문은 취소할 수 없습니다. 매장에 문의하세요.");
+        }
+
+        cancelOrder.setStatus(OrderStatus.CANCELED);
+        cancelOrder.setCancelReason(RejectReason.CUSTOMER_REQUEST_BEFORE_COOKING.getDescription());
+
+        OrderResponseDto responseDto = getOrderResponseDto(cancelOrder);
+
+        // 관리자에게 취소 안내 보내기
+        notificationService.sendOrderAlert(cancelOrder.getStore().getId(), "cancel-order", responseDto);
+
+        // 고객한테 취소 안내 보내기
+        OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
+                .orderId(cancelOrder.getId())
+                .orderStatus(cancelOrder.getStatus())
+                .waitingPosition(0)
+                .waitingTime(0)
+                .cancelReason(cancelOrder.getCancelReason())
+                .build();
+
+        // 고객에게 실시간 알림 전송
+        notificationService.sendCustomerOrderAlert(cancelOrder.getId(), updateDto);
+
+        log.info("고객 주문 취소 완료: OrderId={}", orderId);
+
+        return responseDto;
+    }
+
+
+    /**
+     * 주문 목록 조회 (전체) : 고객용
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getOrdersByUser(String email) {
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        List<OrderEntity> orders = orderRepository.findAllByUserId(user.getId()
+                , Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return orders.stream()
+                .map(this::getOrderResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 주문 목록 조회 (상태별) : 고객용
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getOrdersStatusByUser(String email, OrderStatus status) {
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        List<OrderEntity> orders = orderRepository.findByUserIdAndStatus(user.getId(), status
+                , Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return orders.stream().map(this::getOrderResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    // =================================================================
+    // 사장님(관리자) 관련 비즈니스 로직
+    // 주문 접수, 거절, 완료, 조회
+    // =================================================================
 
     /**
      * 주문 승낙 (관리자용)
@@ -202,45 +288,6 @@ public class OrderService {
     }
 
     /**
-     * 주문 취소 (고객용)
-     * 손님의 변심으로 인한 취소
-     * 조리 전 (ORDERED 상태) -> 재고 감소 X
-     */
-    @Transactional
-    public OrderResponseDto cancelOrder(Long orderId, String email) {
-
-        OrderEntity cancelOrder = validateCustomerOrder(orderId, email);
-
-        if(!cancelOrder.getStatus().equals(OrderStatus.ORDERED)) {
-            throw new IllegalArgumentException("이미 접수된 주문은 취소할 수 없습니다. 매장에 문의하세요.");
-        }
-
-        cancelOrder.setStatus(OrderStatus.CANCELED);
-        cancelOrder.setCancelReason(RejectReason.CUSTOMER_REQUEST_BEFORE_COOKING.getDescription());
-
-        OrderResponseDto responseDto = getOrderResponseDto(cancelOrder);
-
-        // 관리자에게 취소 안내 보내기
-        notificationService.sendOrderAlert(cancelOrder.getStore().getId(), "cancel-order", responseDto);
-
-        // 고객한테 취소 안내 보내기
-        OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
-                .orderId(cancelOrder.getId())
-                .orderStatus(cancelOrder.getStatus())
-                .waitingPosition(0)
-                .waitingTime(0)
-                .cancelReason(cancelOrder.getCancelReason())
-                .build();
-
-        // 고객에게 실시간 알림 전송
-        notificationService.sendCustomerOrderAlert(cancelOrder.getId(), updateDto);
-
-        log.info("고객 주문 취소 완료: OrderId={}", orderId);
-
-        return responseDto;
-    }
-
-    /**
      * 주문 취소 (관리자용)
      * 손님의 변심 / 재료 소진 및 폐기 / 가게 사정 등으로 인한 취소
      * ORDERED / IN_PROGRESS / READY 상태
@@ -331,6 +378,10 @@ public class OrderService {
         return orders.stream().map(this::getOrderResponseDto)
                 .collect(Collectors.toList());
     }
+
+    // =================================================================
+    // 공통 로직 분리
+    // =================================================================
 
     /**
      * 관리자 확인용 메서드

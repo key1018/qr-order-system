@@ -141,6 +141,10 @@ Authorization: Bearer {{userToken}}
 GET {{host}}/qrorder/user/orders/notifications/subscribe/{{storeId}}/{{orderId}}
 Authorization: Bearer {{userToken}}
 
+### 2-6. [고객 1] 주문 조회 (전체)
+GET {{host}}/qrorder/user/orders/orderList
+Authorization: Bearer {{userToken}}
+
 ### ==========================================
 ### 3. [고객 2] 시나리오 (뒷사람 - 신규 추가됨)
 ### ==========================================
@@ -203,6 +207,10 @@ Authorization: Bearer {{userToken2}}
 ### 3-5. [고객 2] 실시간 상태 구독 (SSE)
 # (주의: 실행 후 끄지 말고 켜두세요! -> '대기열 줄어듦' 알림 수신용)
 GET {{host}}/qrorder/user/orders/notifications/subscribe/{{storeId}}/{{orderId2}}
+Authorization: Bearer {{userToken2}}
+
+### 3-6. [고객 2] 주문 조회 (주문 상태별)
+GET {{host}}/qrorder/user/orders/orderList?status=IN_PROGRESS
 Authorization: Bearer {{userToken2}}
 
 ### ==========================================

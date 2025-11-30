@@ -43,6 +43,28 @@ public class OrderController {
     }
 
     /**
+     * 주문 목록 조회 (전체/상태별) : 고객용
+     */
+    @GetMapping("/user/orders/orderList")
+    public ResponseEntity<List<OrderResponseDto>> getUserOrderStatusList(
+            @RequestParam(value = "status", required = false) OrderStatus status,
+            Principal principal
+    ) {
+
+        List<OrderResponseDto> responseDtos;
+
+        if(status == null) {
+            // 전체 조회
+            responseDtos = orderService.getOrdersByUser(principal.getName());
+        } else {
+            // 상태별 조회
+            responseDtos = orderService.getOrdersStatusByUser(principal.getName(), status);
+        }
+
+        return ResponseEntity.ok(responseDtos);
+    }
+
+    /**
      * 주문 취소 (관리자용)
      */
     @PostMapping("/admin/orders/{storeId}/{orderId}/rejectOrders")
