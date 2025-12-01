@@ -1,5 +1,6 @@
 package com.project.qr_order_system.model;
 
+import com.project.qr_order_system.model.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StoreEntity {
+public class StoreEntity extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // 매장 id

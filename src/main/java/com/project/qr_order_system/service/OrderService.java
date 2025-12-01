@@ -173,7 +173,7 @@ public class OrderService {
 
     // =================================================================
     // 사장님(관리자) 관련 비즈니스 로직
-    // 주문 접수, 거절, 완료, 조회
+    // 주문 접수, 거절, 완료, 조회, 완료(수동/자동)
     // =================================================================
 
     /**
@@ -349,6 +349,37 @@ public class OrderService {
     }
 
     /**
+     * 주문 완료 처리 (관리자용)
+     * 수동처리
+     * 상태 : READY -> DONE
+     */
+    @Transactional
+    public OrderResponseDto finishOrder(Long storeId, Long orderId, String email) {
+        validateStoreOwner(storeId, email);
+
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문 내역을 확인할 수 없습니다."));
+
+        if(!order.getStatus().equals(OrderStatus.READY)) {
+            throw new IllegalArgumentException("조리 완료된 주문만 완료할 수 있습니다.");
+        }
+
+        order.setStatus(OrderStatus.DONE); // 완료로 상태 변경
+
+        OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
+                .orderId(order.getId())
+                .orderStatus(order.getStatus())
+                .waitingTime(0)
+                .waitingPosition(0)
+                .message("주문이 완료되었습니다. 맛있게 드세요! ⭐️ 리뷰 작성은 큰 힘이 됩니다.")
+                .build();
+
+        notificationService.sendCustomerOrderAlert(order.getId(), updateDto);
+
+        return getOrderResponseDto(order);
+    }
+
+    /**
      * 주문 목록 조회 (전체) : 관리자용
      */
     @Transactional(readOnly = true)
@@ -378,6 +409,7 @@ public class OrderService {
         return orders.stream().map(this::getOrderResponseDto)
                 .collect(Collectors.toList());
     }
+
 
     // =================================================================
     // 공통 로직 분리

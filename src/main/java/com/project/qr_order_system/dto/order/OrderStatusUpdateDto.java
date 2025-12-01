@@ -19,4 +19,5 @@ public class OrderStatusUpdateDto {
     private Integer waitingPosition; // 내 앞의 대기 인원
     private Integer waitingTime; // 예상 대기 시간(분)
     private String cancelReason;
+    private String message;
 }

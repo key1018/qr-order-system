@@ -88,11 +88,22 @@ public class OrderController {
     }
 
     /**
-     * 주문 완료 (관리자용)
+     * 주문 조리 완료 (관리자용)
      */
     @PostMapping("/admin/orders/{storeId}/{orderId}/completeOrders")
     public ResponseEntity<OrderResponseDto> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.completeOrder(storeId, orderId, principal.getName());
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 주문 최종 완료 (관리자용)
+     * 수동처리
+     * 상태 : READY -> DONE
+     */
+    @PostMapping("/admin/orders/{storeId}/{orderId}/finishOrders")
+    public ResponseEntity<OrderResponseDto> finishOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
+        OrderResponseDto responseDto = orderService.finishOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
     }
 

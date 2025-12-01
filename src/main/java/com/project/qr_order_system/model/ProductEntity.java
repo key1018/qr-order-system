@@ -1,10 +1,9 @@
 package com.project.qr_order_system.model;
 
 import com.project.qr_order_system.exception.OutOfStockException;
+import com.project.qr_order_system.model.common.BaseEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.springframework.transaction.annotation.Transactional;
 
 @Getter
 @Setter
@@ -13,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductEntity {
+public class ProductEntity extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id; // 상품id

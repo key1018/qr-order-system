@@ -1,8 +1,8 @@
 package com.project.qr_order_system.model;
 
+import com.project.qr_order_system.model.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.stereotype.Service;
 
 @Setter
 @Getter
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderItemEntity {
+public class OrderItemEntity extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
