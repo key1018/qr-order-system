@@ -35,7 +35,7 @@ public class OrderScheduler {
 
         // 기준 시간 설정 : 현재 시간 - 10분
         // 즉, READY 상태에서 updateAt 시간이 10분 넘게 방치
-        LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(1);
+        LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(10);
 
         log.info("스케줄러 실행: {} 이전에 READY 된 주문을 처리합니다.", cutoffTime);
 
