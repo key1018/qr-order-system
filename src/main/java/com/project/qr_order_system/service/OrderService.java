@@ -459,6 +459,7 @@ public class OrderService {
         List<OrderItemResponseDto> orderItemList = savedOrder.getOrderItems()
                 .stream()
                 .map(itemDto -> OrderItemResponseDto.builder()
+                        .productId(itemDto.getId())
                         .orderPrice(itemDto.getOrderPrice())
                         .productName(itemDto.getProduct().getProductName())
                         .quantity(itemDto.getQuantity())

@@ -8,7 +8,7 @@ import lombok.*;
 @Setter
 @Entity
 @Table(name = "paymentCard")
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class PaymentCardEntity extends BaseEntity {

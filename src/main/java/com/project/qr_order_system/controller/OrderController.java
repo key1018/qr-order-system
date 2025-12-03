@@ -27,7 +27,7 @@ public class OrderController {
     /**
      * 주문 등록 (고객용)
      */
-    @PostMapping("/users/orders/createOrders")
+    @PostMapping("/users/orders/createorders")
     public ResponseEntity<OrderResponseDto> createOrder(@RequestBody OrderRequestDto requestDto, Principal principal) {
         OrderResponseDto responseDto = orderService.addOrder(requestDto, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -36,7 +36,7 @@ public class OrderController {
     /**
      * 주문 취소 (고객용)
      */
-    @PostMapping("/users/orders/{storeId}/{orderId}/cancelOrders")
+    @PostMapping("/users/orders/{storeId}/{orderId}/cancelorders")
     public ResponseEntity<OrderResponseDto> cancelOrder(@PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.cancelOrder(orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -45,7 +45,7 @@ public class OrderController {
     /**
      * 주문 목록 조회 (전체/상태별) : 고객용
      */
-    @GetMapping("/user/orders/orderList")
+    @GetMapping("/user/orders/orderlist")
     public ResponseEntity<List<OrderResponseDto>> getUserOrderStatusList(
             @RequestParam(value = "status", required = false) OrderStatus status,
             Principal principal
@@ -67,7 +67,7 @@ public class OrderController {
     /**
      * 주문 취소 (관리자용)
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/rejectOrders")
+    @PostMapping("/admin/orders/{storeId}/{orderId}/rejectorders")
     public ResponseEntity<OrderResponseDto> rejectOrder(
             @PathVariable("storeId") Long storeId,
             @PathVariable("orderId") Long orderId,
@@ -81,7 +81,7 @@ public class OrderController {
     /**
      * 주문 승낙 (관리자용)
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/acceptOrders")
+    @PostMapping("/admin/orders/{storeId}/{orderId}/acceptorders")
     public ResponseEntity<OrderResponseDto> acceptOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.acceptOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -90,7 +90,7 @@ public class OrderController {
     /**
      * 주문 조리 완료 (관리자용)
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/completeOrders")
+    @PostMapping("/admin/orders/{storeId}/{orderId}/completeorders")
     public ResponseEntity<OrderResponseDto> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.completeOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -101,7 +101,7 @@ public class OrderController {
      * 수동처리
      * 상태 : READY -> DONE
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/finishOrders")
+    @PostMapping("/admin/orders/{storeId}/{orderId}/finishorders")
     public ResponseEntity<OrderResponseDto> finishOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.finishOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -110,7 +110,7 @@ public class OrderController {
     /**
      * 주문 목록 조회 (전체/상태별) : 관리자용
      */
-    @GetMapping("/admin/orders/{storeId}/orderList")
+    @GetMapping("/admin/orders/{storeId}/orderlist")
     public ResponseEntity<List<OrderResponseDto>> getOrderStatusList(
             @PathVariable("storeId") Long storeId,
             @RequestParam(value = "status", required = false) OrderStatus status,

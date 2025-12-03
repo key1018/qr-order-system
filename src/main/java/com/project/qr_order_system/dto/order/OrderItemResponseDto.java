@@ -8,12 +8,14 @@ import lombok.Getter;
  */
 @Getter
 public class OrderItemResponseDto {
+    private long productId;
     private String productName;
     private Integer quantity;
     private Integer orderPrice;
 
     @Builder
-    public OrderItemResponseDto(String productName, Integer quantity, Integer orderPrice) {
+    public OrderItemResponseDto(long productId, String productName, Integer quantity, Integer orderPrice) {
+        this.productId = productId;
         this.productName = productName;
         this.quantity = quantity;
         this.orderPrice = orderPrice;

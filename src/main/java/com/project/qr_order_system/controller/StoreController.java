@@ -32,7 +32,7 @@ public class StoreController {
     /**
      * 매장 생성 API
      */
-    @PostMapping("/createStore")
+    @PostMapping("/createstore")
     public ResponseEntity<StoreResponseDto> createStore(@Valid @RequestBody StoreCreateRequestDto requestDto, Principal principal) {
         System.out.println("StoreCreateRequestDto" + requestDto);
         StoreResponseDto responseDto = storeService.createStore(requestDto,principal.getName());

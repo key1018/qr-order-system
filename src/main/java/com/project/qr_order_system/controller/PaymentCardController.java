@@ -22,7 +22,7 @@ public class PaymentCardController {
     /**
      * 카드 등록 (고객용)
      */
-    @PostMapping("/registerCard")
+    @PostMapping("/registercard")
     public ResponseEntity<PaymentCardResponseDto> registerCard(@RequestBody PaymentCardRegisterRequestDto requestDto, Principal principal) {
 
         PaymentCardResponseDto responseDto = paymentCardService.registerCard(requestDto, principal.getName());
