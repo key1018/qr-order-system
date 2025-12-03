@@ -9,7 +9,7 @@ import lombok.*;
 @Setter
 @Entity
 @Table(name = "product")
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class ProductEntity extends BaseEntity {

@@ -13,7 +13,7 @@ import java.util.List;
 @Getter
 @Entity
 @Table(name = "orders") // db에서 order by 인줄 알아서 변경
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class OrderEntity extends BaseEntity {
@@ -49,6 +49,7 @@ public class OrderEntity extends BaseEntity {
 //    @CreatedDate
 //    private LocalDateTime createdAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItemEntity> orderItems = new ArrayList<>();
 

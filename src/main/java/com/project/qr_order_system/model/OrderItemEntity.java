@@ -8,7 +8,7 @@ import lombok.*;
 @Getter
 @Entity
 @Table(name = "orderItem")
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class OrderItemEntity extends BaseEntity {

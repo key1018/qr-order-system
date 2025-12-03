@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 @Table(name = "store")
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class StoreEntity extends BaseEntity {
@@ -26,6 +26,7 @@ public class StoreEntity extends BaseEntity {
     @Column(nullable = false)
     private StoreType storeType;
 
+    @Builder.Default
     @OneToMany(mappedBy = "store")
     private List<ProductEntity> products = new ArrayList<>();
 
