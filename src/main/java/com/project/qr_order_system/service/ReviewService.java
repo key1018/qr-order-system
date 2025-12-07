@@ -7,10 +7,14 @@ import com.project.qr_order_system.model.*;
 import com.project.qr_order_system.persistence.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -88,6 +92,55 @@ public class ReviewService {
         return getReviewResponseDto(savedReview, null);
     }
 
+    /**
+     * 내가 쓴 리뷰 전체 조회(고객용)
+     */
+    @Transactional(readOnly = true)
+    public Slice<ReviewResponseDto> getMyReviews(String email, Pageable pageable){
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Slice<ReviewEntity> reviews = reviewRepository.findAllByUser_Id(user.getId(), pageable);
+
+        // 리뷰없으면 빈 리스트로 처리
+        if(reviews.isEmpty()){
+            return reviews.map(review -> null);
+        }
+
+        // reviews : Slice 자체
+        // getContent() : List<ReviewEntity> 데이터 리스트
+        // stream : List<ReviewEntity> 데이터 리스트 하나씩 처리해서 reviewId 꺼냄
+        // => 값 : [1,2]
+        List<Long> reviewIds = reviews.getContent().stream()
+                .map(ReviewEntity::getReviewId).toList();
+
+        // [1,2]넣고 List<ReviewReplyEntity>로 한꺼번에 조회됨
+        List<ReviewReplyEntity> reply = reviewReplyRepository.findAllByReview_ReviewIdIn(reviewIds);
+
+        // key : 리뷰id, value = ReviewReplyEntity
+        // List<ReviewReplyEntity>에 있는 ReviewReplyEntity를 stream으로 하나씩 뺸 뒤에
+        // ReviewReplyEntity를 r로 정의한 뒤 r.getReview().getReviewId()해서 key
+        // r -> r자체로 해서 value 값을 꺼냄
+        // 값 : {
+        //  1 : 1번_리뷰의_답글_객체(Entity),
+        //  2 : 2번_리뷰의_답글_객체(Entity)
+        //}
+        Map<Long, ReviewReplyEntity> replyMap = reply.stream()
+                .collect(Collectors.toMap(r -> r.getReview().getReviewId() // key
+                        , r -> r) // value (ReviewReplyEntity 객체)
+                );
+
+        // reviews 자체는 ReviewEntity들이 담겨 있는 박스(Slice)
+        // map을 통해 ReviewEntity들을 하나씩 빼냄
+        // 뺴낸 값을 review라고 정의한 뒤 ReviewReplyEntity에 reviewId값을 넣어서 ReviewReplyEntity 값 빼냄
+        // getReviewResponseDto(review, replyEntity)에 reviewEntity값, ReviewReplyEntity값을 넣어서 최종 return
+        return reviews.map(review -> { // review : ReviewEntity
+            ReviewReplyEntity replyEntity = replyMap.get(review.getReviewId());
+            return getReviewResponseDto(review, replyEntity);
+        });
+    }
+
     // =================================================================
     // 사장님(관리자) 관련 비즈니스 로직
     // 리뷰 답변 작성
@@ -126,6 +179,39 @@ public class ReviewService {
     }
 
     // =================================================================
+    // 고객, 사장님(관리자) 관련 비즈니스 로직
+    // 가게 리뷰 조회
+    // =================================================================
+
+
+    @Transactional(readOnly = true)
+    public Slice<ReviewResponseDto> getStoreReviews(Long storeId, Pageable pageable){
+
+        StoreEntity store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("매장을 찾을  수 없습니다."));
+
+        Slice<ReviewEntity> reviews = reviewRepository.findAllByOrder_Store_Id(store.getId(), pageable);
+
+        if(reviews.isEmpty()){
+            return reviews.map(review -> null);
+        }
+
+        List<Long> reviewId = reviews.getContent().stream()
+                .map(ReviewEntity::getReviewId).toList();
+
+        List<ReviewReplyEntity> reply = reviewReplyRepository.findAllByReview_ReviewIdIn(reviewId);
+
+        Map<Long, ReviewReplyEntity> replyMap = reply.stream()
+                .collect(Collectors.toMap(r -> r.getReview().getReviewId()
+                , r -> r));
+
+        return reviews.map(review -> {
+            ReviewReplyEntity reviewReply = replyMap.get(review.getReviewId());
+            return getReviewResponseDto(review, reviewReply);
+        });
+    }
+
+    // =================================================================
     // 공통 로직 분리
     // =================================================================
 
@@ -147,8 +233,9 @@ public class ReviewService {
                 .reviewItems(reviewItemList)
                 .reviewReplyContent(savedReviewReply != null ? savedReviewReply.getReplyContent() : null)
                 .replyDate(savedReviewReply != null ? savedReviewReply.getCreatedAt() : null)
+                .storeId(savedReview.getOrder().getStore().getId())
+                .storeName(savedReview.getOrder().getStore().getStoreName())
+                .storeImage(savedReview.getOrder().getStore().getStoreImage())
                 .build();
     }
-
-
 }

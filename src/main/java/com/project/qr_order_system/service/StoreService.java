@@ -35,6 +35,7 @@ public class StoreService {
             StoreEntity storeEntity = StoreEntity.builder()
                     .storeName(requestDto.getStoreName())
                     .storeType(requestDto.getStoreType())
+                    .storeImage(requestDto.getStoreImage())
                     .owner(admin)
                     .build();
 

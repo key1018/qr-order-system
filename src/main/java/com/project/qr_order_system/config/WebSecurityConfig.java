@@ -37,7 +37,7 @@ public class WebSecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable) // JWT 토큰을 헤더에 실어 보내는 'Bearer' 방식을 사용하기 때문에 비활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // session 기반이 아님을 선언 (JWT 사용)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/qrorder/users/signup","/qrorder/users/login").permitAll() // 회원가입, 로그인은 인증 없이 가능
+                        .requestMatchers("/qrorder/users/signup","/qrorder/users/login","/qrorder/stores/reviews/*/storesreviews").permitAll() // 회원가입, 로그인은 인증 없이 가능
                         .requestMatchers("/qrorder/admin/**").hasRole("ADMIN")
                         .requestMatchers("/qrorder/**").hasRole("USER") // 나머지는 로그인 필수
                         .anyRequest().permitAll()

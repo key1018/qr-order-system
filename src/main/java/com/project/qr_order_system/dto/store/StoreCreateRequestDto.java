@@ -16,4 +16,5 @@ public class StoreCreateRequestDto {
     private String storeName;
     @NotNull(message = "매장타입은 필수입니다.")
     private StoreType storeType;
+    private String storeImage;
 }

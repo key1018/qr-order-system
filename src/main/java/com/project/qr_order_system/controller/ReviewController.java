@@ -6,11 +6,16 @@ import com.project.qr_order_system.dto.review.ReviewCreateRequestDto;
 import com.project.qr_order_system.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -26,6 +31,13 @@ public class ReviewController {
         return ResponseEntity.ok(responseDto);
     }
 
+    @GetMapping("/user/reviews/myreviews")
+    public ResponseEntity<Slice<ReviewResponseDto>> getMyReviews(Principal principal
+    ,@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Slice<ReviewResponseDto> myReviews = reviewService.getMyReviews(principal.getName(), pageable);
+        return ResponseEntity.ok(myReviews);
+    }
+
     @PostMapping("/admin/reply/{storeId}/{reviewId}/createreplies")
     public ResponseEntity<ReviewResponseDto> createReviewReply(
             @Valid @RequestBody ReviewReplyRequestDto requestDto,
@@ -33,5 +45,14 @@ public class ReviewController {
             Principal principal) {
         ReviewResponseDto responseDto = reviewService.createReviewReply(reviewId, requestDto, principal.getName());
         return ResponseEntity.ok(responseDto);
+    }
+
+    @GetMapping("/stores/reviews/{storeId}/storesreviews")
+    public ResponseEntity<Slice<ReviewResponseDto>> getStoreReviews(
+            @PathVariable("storeId") Long storeId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Slice<ReviewResponseDto> storeReviews = reviewService.getStoreReviews(storeId, pageable);
+        return ResponseEntity.ok(storeReviews);
     }
 }

@@ -22,6 +22,10 @@ public class ReviewResponseDto {
     private String reviewReplyContent;
     private LocalDateTime replyDate;
 
+    private Long storeId;
+    private String storeName;
+    private String storeImage; // 가게 대표 사진
+
     @Getter
     @Builder
     public static class ReviewItemInfo {

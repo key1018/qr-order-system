@@ -30,6 +30,8 @@ public class StoreEntity extends BaseEntity {
     @OneToMany(mappedBy = "store")
     private List<ProductEntity> products = new ArrayList<>();
 
+    private String storeImage; // 가게 대표 사진
+
     // 사장님-매장 연결 -> N:1 관계 추가
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id") // DB에 'owner_id' (FK) 컬럼이 생성됩니다.

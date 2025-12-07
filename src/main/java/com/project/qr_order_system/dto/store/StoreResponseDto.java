@@ -20,6 +20,7 @@ public class StoreResponseDto {
     private Long id;
     private String storeName;
     private StoreType storeType;
+    private String storeImage;
 //    private List<ProductResponseDto> products; // 매장 상품 목록
 
 //    @Builder

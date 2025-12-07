@@ -36,6 +36,8 @@ public class QStoreEntity extends EntityPathBase<StoreEntity> {
 
     public final ListPath<ProductEntity, QProductEntity> products = this.<ProductEntity, QProductEntity>createList("products", ProductEntity.class, QProductEntity.class, PathInits.DIRECT2);
 
+    public final StringPath storeImage = createString("storeImage");
+
     public final StringPath storeName = createString("storeName");
 
     public final EnumPath<StoreType> storeType = createEnum("storeType", StoreType.class);
