@@ -48,7 +48,7 @@ public class ProductController {
     /**
      * 상품 조회 (고객)
      */
-    @PostMapping("/user/product/{storeId}/retrieveproductList")
+    @PostMapping("/users/product/{storeId}/retrieveproductList")
     public ResponseEntity<List<ProductResponseDto>> retrieveProductList(
             @PathVariable("storeId") Long storeId,
             Principal principal

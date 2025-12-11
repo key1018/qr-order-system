@@ -45,7 +45,7 @@ public class OrderController {
     /**
      * 주문 목록 조회 (전체/상태별) : 고객용
      */
-    @GetMapping("/user/orders/orderlist")
+    @GetMapping("/users/orders/orderlist")
     public ResponseEntity<List<OrderResponseDto>> getUserOrderStatusList(
             @RequestParam(value = "status", required = false) OrderStatus status,
             Principal principal

@@ -1,6 +1,6 @@
 #FileLock
-#Tue Dec 09 01:54:54 KST 2025
-server=192.168.45.48\:62887
-hostName=BOOK-6MKSS57FS2
+#Fri Dec 12 00:40:54 KST 2025
+server=192.168.45.48\:64113
+hostName=host.docker.internal
 method=file
-id=19afee3344ce28b985716c7a9dde6500db93986db2e
+id=19b0e1289f0e941c6555d40bb9615414d9aa93dd421

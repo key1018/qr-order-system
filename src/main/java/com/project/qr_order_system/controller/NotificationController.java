@@ -33,7 +33,7 @@ public class NotificationController {
     /**
      * 고객용
      */
-    @GetMapping(value = "/user/orders/notifications/subscribe/{storeId}/{orderId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/users/orders/notifications/subscribe/{storeId}/{orderId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter customerSubscribe(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         return notificationService.customerSubscribe(storeId, orderId, principal.getName());
     }

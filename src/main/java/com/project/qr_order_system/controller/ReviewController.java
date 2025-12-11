@@ -25,13 +25,13 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @PostMapping("/user/reviews/createreviews")
+    @PostMapping("/users/reviews/createreviews")
     public ResponseEntity<ReviewResponseDto> createReview(@Valid @RequestBody ReviewCreateRequestDto requestDto, Principal principal) {
         ReviewResponseDto responseDto = reviewService.createReview(requestDto, principal.getName());
         return ResponseEntity.ok(responseDto);
     }
 
-    @GetMapping("/user/reviews/myreviews")
+    @GetMapping("/users/reviews/myreviews")
     public ResponseEntity<Slice<ReviewResponseDto>> getMyReviews(Principal principal
     ,@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Slice<ReviewResponseDto> myReviews = reviewService.getMyReviews(principal.getName(), pageable);
