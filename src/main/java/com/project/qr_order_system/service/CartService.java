@@ -39,12 +39,32 @@ public class CartService {
         HashOperations<String, String, CartAddResponseDto> hashOps = redisTemplate.opsForHash();
         String productIdStr = String.valueOf(requestDto.getProductId());
 
+        ProductEntity product = productRepository.findByProductIdWithLock(requestDto.getProductId())
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+        // 새로운 상품이 이미 담겨있는 가게의 상품인지 확인
+        Long newStoreId = product.getStore().getId();
+
+        List<CartAddResponseDto> currentCartItems = hashOps.values(key);
+
+        if (!currentCartItems.isEmpty()) {
+            // 장바구니에 담긴 첫 번째 상품의 가게 ID 확인
+            CartAddResponseDto firstItem = currentCartItems.get(0);
+
+            // 이미 담겨있는 가게와 같은지 비교
+            if (!newStoreId.equals(firstItem.getStoreId())) {
+                throw new IllegalArgumentException("동일 가게의 상품만 담을 수 있습니다.");
+            }
+        }
         if(hashOps.hasKey(key,productIdStr)){
             // 이미 장바구니 있는 상품인지 확인
             CartAddResponseDto existingItem = hashOps.get(key,productIdStr);
+
             Integer newQuantity = existingItem.getQuantity() + requestDto.getQuantity();
 
             CartAddResponseDto updateCart = CartAddResponseDto.builder()
+                            .storeId(existingItem.getStoreId())
+                            .storeName(existingItem.getStoreName())
                             .productId(existingItem.getProductId())
                             .productName(existingItem.getProductName())
                             .quantity(newQuantity)
@@ -56,10 +76,9 @@ public class CartService {
 
         } else {
             // 없으면 새로 추가
-            ProductEntity product = productRepository.findById(requestDto.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-
             CartAddResponseDto newCart = CartAddResponseDto.builder()
+                                .storeId(product.getStore().getId())
+                                .storeName(product.getStore().getStoreName())
                                 .productId(product.getId())
                                 .productName(product.getProductName())
                                 .quantity(requestDto.getQuantity())
@@ -113,6 +132,8 @@ public class CartService {
         }
 
         CartAddResponseDto updateCart = CartAddResponseDto.builder()
+                .storeId(existingItem.getStoreId())
+                .storeName(existingItem.getStoreName())
                 .productId(existingItem.getProductId())
                 .productName(existingItem.getProductName())
                 .quantity(newQuantity)

@@ -8,6 +8,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CartAddResponseDto {
+    private Long storeId;
+    private String storeName;
     private Long productId;
     private String productName;
     private Integer quantity;
