@@ -1,5 +1,6 @@
 package com.project.qr_order_system.service;
 
+import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.dto.order.OrderItemResponseDto;
 import com.project.qr_order_system.dto.order.OrderRequestDto;
 import com.project.qr_order_system.dto.order.OrderResponseDto;
@@ -30,6 +31,7 @@ public class OrderService {
     private final StoreRepository storeRepository;
     private final ProductRepository productRepository;
     private final NotificationService notificationService;
+    private final OrderRepositoryImpl orderRepositoryImpl;
 
 
     // =================================================================
@@ -410,6 +412,19 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 상세 주문 검색
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> searchOrders(AdminOrderSearchDto searchDto, String email){
+        validateStoreOwner(searchDto.getStoreId(), email);
+
+        List<OrderEntity> searchResults = orderRepositoryImpl.searchOrders(searchDto);
+
+        return searchResults.stream()
+                .map(this::getOrderResponseDto)
+                .collect(Collectors.toList());
+    }
 
     // =================================================================
     // 공통 로직 분리

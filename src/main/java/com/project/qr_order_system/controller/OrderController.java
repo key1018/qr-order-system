@@ -1,5 +1,6 @@
 package com.project.qr_order_system.controller;
 
+import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.dto.order.OrderRejectRequestDto;
 import com.project.qr_order_system.dto.order.OrderRequestDto;
 import com.project.qr_order_system.dto.order.OrderResponseDto;
@@ -128,5 +129,17 @@ public class OrderController {
         }
 
         return ResponseEntity.ok(responseDtos);
+    }
+
+    /**
+     * 상세 주문 조회
+     */
+    @GetMapping("/admin/search/orders")
+    public ResponseEntity<List<OrderResponseDto>> searchOrders(
+            @ModelAttribute AdminOrderSearchDto searchDto,
+            Principal principal){
+        log.info("관리자 상세 검색 요청 - StoreId: {}, 조건: {}", searchDto.getStoreId(), searchDto);
+
+        return ResponseEntity.ok(orderService.searchOrders(searchDto, principal.getName()));
     }
 }

@@ -1,5 +1,6 @@
 package com.project.qr_order_system.persistence;
 
+import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.model.OrderEntity;
 import com.project.qr_order_system.model.OrderStatus;
 import org.springframework.data.domain.Sort;
@@ -11,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
+public interface OrderRepository extends JpaRepository<OrderEntity, Long>, OrderRepositoryCustom {
     // 주문 목록 조회 (주문 상태별)
     List<OrderEntity> findByStoreIdAndStatus(Long storeId, OrderStatus status, Sort sort); // 관리자
     List<OrderEntity> findByUserIdAndStatus(Long userId, OrderStatus status, Sort sort);
