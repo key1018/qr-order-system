@@ -7,6 +7,9 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.core.types.EntityPath;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,10 +23,9 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<OrderEntity> searchOrders(AdminOrderSearchDto searchDto) {
-        return queryFactory
+    public Page<OrderEntity> searchOrders(AdminOrderSearchDto searchDto, Pageable pageable) {
+        List<OrderEntity> content = queryFactory
                 .selectFrom(orderEntity)
-
                 // EntityPath<?>라는 와일드카드를 붙여서 원시 타입 에러 해결
                 .leftJoin((EntityPath<?>) orderEntity.user).fetchJoin()
                 // 리스트는 별칭 사용
@@ -39,7 +41,28 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
                 )
                 .distinct()
                 .orderBy(orderEntity.createdAt.desc())
+                .offset(pageable.getOffset()) // 페이지 번호 (0부터 시작)
+                .limit(pageable.getPageSize()) // 페이지 당 개수
                 .fetch();
+
+        // 전체 개수
+        Long totalCount = queryFactory
+                .select(orderEntity.count())
+                .from(orderEntity)
+                .where(
+                        storeEq(searchDto.getStoreId()),
+                        statusEq(searchDto.getStatus()),
+                        dateBetween(searchDto.getStartDate(), searchDto.getEndDate()),
+                        priceBetween(searchDto.getMinPrice(), searchDto.getMaxPrice()),
+                        userIdEq(searchDto.getUserId()),
+                        menuIdEq(searchDto.getMenuId())
+                )
+                .fetchCount();
+
+        if(totalCount == null) totalCount = 0L;
+
+        // List + TotalCount = Page 포장해서 리턴
+        return new PageImpl<>(content, pageable, totalCount);
     }
 
     // === 조건 메서드들 ===

@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.query.Order;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -133,13 +134,16 @@ public class OrderController {
 
     /**
      * 상세 주문 조회
+     * ex) /qrorder/admin/search/orders?storeId=1&page=0&size=10
      */
     @GetMapping("/admin/search/orders")
     public ResponseEntity<List<OrderResponseDto>> searchOrders(
             @ModelAttribute AdminOrderSearchDto searchDto,
-            Principal principal){
+            Principal principal,
+            Pageable pageable
+    ){
         log.info("관리자 상세 검색 요청 - StoreId: {}, 조건: {}", searchDto.getStoreId(), searchDto);
 
-        return ResponseEntity.ok(orderService.searchOrders(searchDto, principal.getName()));
+        return ResponseEntity.ok(orderService.searchOrders(searchDto, principal.getName(), pageable));
     }
 }

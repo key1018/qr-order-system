@@ -56,7 +56,7 @@ public class UserService {
         // jwt 토큰 생성
         String accessToken = jwtTokenPovider.createNewAccessToken(user);
         String refreshToken = jwtTokenPovider.refreshAccessToken(user);
-        return new UserLoginResponseDto(accessToken, refreshToken);
+        return new UserLoginResponseDto(accessToken, refreshToken, user.getId());
     }
 
 }

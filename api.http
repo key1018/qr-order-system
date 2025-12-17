@@ -95,6 +95,8 @@ Content-Type: {{contentType}}
 > {%
     client.global.set("userToken", response.body.accessToken);
     client.log("유저 토큰이 저장되었습니다.");
+    client.global.set("userId", response.body.userId);
+    client.log("userId " + response.body.userId);
 %}
 
 ### 2-3. [고객 1] 임시 카드 등록
@@ -588,12 +590,12 @@ Authorization: Bearer {{adminToken}}
 
 ### 10-6. [메뉴] 특정 메뉴(ID:1, 아메리카노)가 포함된 주문 조회
 # Join된 OrderItem 테이블까지 가서 잘 찾아오는지 확인
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&productId=6
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&productId={{cust1_itemId1}}
 Authorization: Bearer {{adminToken}}
 
 ### 10-7. [고객] 특정 유저가 주문한 내역 조회
 # 고객 1이나 고객 2의 ID를 알고 있다면 테스트 가능 (보통 1, 2 순서대로 생성됨)
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&id=1
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&id={{userId}}&page=1&size=5
 Authorization: Bearer {{adminToken}}
 
 ### 10-8. [복합] "완료됨 + 5000원 이상 + 특정 날짜" (풀옵션 검색)

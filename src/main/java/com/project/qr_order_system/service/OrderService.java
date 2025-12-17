@@ -10,6 +10,8 @@ import com.project.qr_order_system.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.query.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
@@ -416,10 +418,10 @@ public class OrderService {
      * 상세 주문 검색
      */
     @Transactional(readOnly = true)
-    public List<OrderResponseDto> searchOrders(AdminOrderSearchDto searchDto, String email){
+    public List<OrderResponseDto> searchOrders(AdminOrderSearchDto searchDto, String email, Pageable pageable){
         validateStoreOwner(searchDto.getStoreId(), email);
 
-        List<OrderEntity> searchResults = orderRepositoryImpl.searchOrders(searchDto);
+        Page<OrderEntity> searchResults = orderRepositoryImpl.searchOrders(searchDto, pageable);
 
         return searchResults.stream()
                 .map(this::getOrderResponseDto)
