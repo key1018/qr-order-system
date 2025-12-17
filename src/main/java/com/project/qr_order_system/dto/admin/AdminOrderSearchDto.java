@@ -22,4 +22,7 @@ public class AdminOrderSearchDto {
     private Integer maxPrice; // 최대 주문 금액
     private Long userId; // 특정 회원 조회
     private Long menuId; // 특정 메뉴 조회
+
+    private String userName;
+    private String userEmail;
 }

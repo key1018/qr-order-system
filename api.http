@@ -97,6 +97,10 @@ Content-Type: {{contentType}}
     client.log("유저 토큰이 저장되었습니다.");
     client.global.set("userId", response.body.userId);
     client.log("userId " + response.body.userId);
+    client.global.set("userName", response.body.userName);
+    client.log("userName" + response.body.userName);
+    client.global.set("userEmail", response.body.userEmail);
+    client.log("userEmail" + response.body.userEmail);
 %}
 
 ### 2-3. [고객 1] 임시 카드 등록
@@ -564,41 +568,53 @@ Authorization: Bearer {{userToken}}
 
 ### 10-1. [기본] 필수 조건만으로 조회 (전체 목록)
 # QueryDSL이 기본적으로 동작하는지 확인
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&page=0&size=10
 Authorization: Bearer {{adminToken}}
 
 ### 10-2. [상태] '완료된(DONE)' 주문만 조회
 # 4-7에서 완료 처리한 주문이 나와야 함
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&status=DONE
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&status=DONE&page=0&size=10
 Authorization: Bearer {{adminToken}}
 
 ### 10-3. [날짜] 날짜 범위 조회
 # 테스트 시 실제 주문이 들어간 날짜(오늘)가 포함되도록 날짜를 확인하세요.
 # 포맷: yyyy-MM-ddTHH:mm:ss
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&startDate=2025-01-01T00:00:00&endDate=2025-12-31T23:59:59
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&startDate=2025-01-01T00:00:00&endDate=2025-12-31T23:59:59&page=0&size=10
 Authorization: Bearer {{adminToken}}
 
 ### 10-4. [금액] '9,000원 이상' 주문만 조회 (VIP 주문)
 # 아메리카노 2잔(9000원) 주문이 검색되어야 함
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&minPrice=9000
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&minPrice=9000&page=0&size=10
 Authorization: Bearer {{adminToken}}
 
 ### 10-5. [금액 범위] '4,000원 ~ 6,000원' 사이 주문 조회
 # 라떼 1잔(5000원) 주문이 검색되어야 함
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&minPrice=4000&maxPrice=6000
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&minPrice=4000&maxPrice=6000&page=0&size=10
 Authorization: Bearer {{adminToken}}
 
 ### 10-6. [메뉴] 특정 메뉴(ID:1, 아메리카노)가 포함된 주문 조회
 # Join된 OrderItem 테이블까지 가서 잘 찾아오는지 확인
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&productId={{cust1_itemId1}}
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&productId={{cust1_itemId1}}&page=0&size=10
 Authorization: Bearer {{adminToken}}
 
 ### 10-7. [고객] 특정 유저가 주문한 내역 조회
 # 고객 1이나 고객 2의 ID를 알고 있다면 테스트 가능 (보통 1, 2 순서대로 생성됨)
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&id={{userId}}&page=1&size=5
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&id={{userId}}&page=0&size=5
 Authorization: Bearer {{adminToken}}
 
 ### 10-8. [복합] "완료됨 + 5000원 이상 + 특정 날짜" (풀옵션 검색)
 # 모든 동적 쿼리가 AND 조건으로 잘 합쳐지는지 최종 확인
-GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&status=DONE&minPrice=5000&startDate=2025-01-01T00:00:00&endDate=2025-12-31T23:59:59
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&status=DONE&minPrice=5000&startDate=2025-01-01T00:00:00&endDate=2025-12-31T23:59:59&page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### 10-9. [복합] "이메일 + 성함"
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&userEmail={{userEmail}}&userName={{userName}}&page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### 10-10. [고객] "이메일"
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&userEmail={{userEmail}}&page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### 10-11. [고객] "성함"
+GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&userName={{userName}}&page=0&size=10
 Authorization: Bearer {{adminToken}}

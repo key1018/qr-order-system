@@ -3,6 +3,7 @@ package com.project.qr_order_system.persistence;
 import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.model.OrderEntity;
 import com.project.qr_order_system.model.OrderStatus;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.core.types.EntityPath;
@@ -37,7 +38,9 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
                         dateBetween(searchDto.getStartDate(), searchDto.getEndDate()),
                         priceBetween(searchDto.getMinPrice(), searchDto.getMaxPrice()),
                         userIdEq(searchDto.getUserId()),
-                        menuIdEq(searchDto.getMenuId())
+                        menuIdEq(searchDto.getMenuId()),
+                        userNameContains(searchDto.getUserName()),
+                        userEmailEq(searchDto.getUserEmail())
                 )
                 .distinct()
                 .orderBy(orderEntity.createdAt.desc())
@@ -97,4 +100,15 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
     private BooleanExpression menuIdEq(Long menuId) {
         return menuId != null ? orderItemEntity.product.id.eq(menuId) : null;
     }
+
+    private BooleanExpression userNameContains(String userName) {
+        return (userName != null && !userName.isEmpty())
+                ? orderEntity.user.name.contains(userName)
+                : null;
+    }
+
+    private BooleanExpression userEmailEq(String userEmail) {
+        return userEmail != null ? orderEntity.user.email.eq(userEmail) : null;
+    }
+
 }
