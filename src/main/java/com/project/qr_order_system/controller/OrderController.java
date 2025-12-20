@@ -1,17 +1,21 @@
 package com.project.qr_order_system.controller;
 
+import com.project.qr_order_system.dto.admin.AdminMenuSalesStatisticsDto;
 import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
+import com.project.qr_order_system.dto.admin.AdminSalesStaticsDto;
 import com.project.qr_order_system.dto.order.OrderRejectRequestDto;
 import com.project.qr_order_system.dto.order.OrderRequestDto;
 import com.project.qr_order_system.dto.order.OrderResponseDto;
+import com.project.qr_order_system.dto.order.OrderSearchResponseDto;
+import com.project.qr_order_system.dto.review.ReviewResponseDto;
 import com.project.qr_order_system.model.OrderStatus;
-import com.project.qr_order_system.model.RejectReason;
 import com.project.qr_order_system.service.OrderService;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.query.Order;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,8 +43,11 @@ public class OrderController {
      * 주문 취소 (고객용)
      */
     @PostMapping("/users/orders/{storeId}/{orderId}/cancelorders")
-    public ResponseEntity<OrderResponseDto> cancelOrder(@PathVariable("orderId") Long orderId, Principal principal) {
-        OrderResponseDto responseDto = orderService.cancelOrder(orderId, principal.getName());
+    public ResponseEntity<OrderResponseDto> cancelOrder(
+            @PathVariable("storeId") Long storeId, 
+            @PathVariable("orderId") Long orderId,
+             Principal principal) {
+        OrderResponseDto responseDto = orderService.cancelOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
     }
 
@@ -48,28 +55,21 @@ public class OrderController {
      * 주문 목록 조회 (전체/상태별) : 고객용
      */
     @GetMapping("/users/orders/orderlist")
-    public ResponseEntity<List<OrderResponseDto>> getUserOrderStatusList(
+    public ResponseEntity<Slice<OrderSearchResponseDto>> getUserOrderStatusList(
             @RequestParam(value = "status", required = false) OrderStatus status,
-            Principal principal
+            Principal principal,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
 
-        List<OrderResponseDto> responseDtos;
+        Slice<OrderSearchResponseDto> myOrders = orderService.getOrdersByUser(principal.getName(), status, pageable);
 
-        if(status == null) {
-            // 전체 조회
-            responseDtos = orderService.getOrdersByUser(principal.getName());
-        } else {
-            // 상태별 조회
-            responseDtos = orderService.getOrdersStatusByUser(principal.getName(), status);
-        }
-
-        return ResponseEntity.ok(responseDtos);
+        return ResponseEntity.ok(myOrders);
     }
 
     /**
      * 주문 취소 (관리자용)
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/rejectorders")
+    @PatchMapping("/admin/orders/{storeId}/{orderId}/rejectorders")
     public ResponseEntity<OrderResponseDto> rejectOrder(
             @PathVariable("storeId") Long storeId,
             @PathVariable("orderId") Long orderId,
@@ -83,7 +83,7 @@ public class OrderController {
     /**
      * 주문 승낙 (관리자용)
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/acceptorders")
+    @PatchMapping("/admin/orders/{storeId}/{orderId}/acceptorders")
     public ResponseEntity<OrderResponseDto> acceptOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.acceptOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -92,7 +92,7 @@ public class OrderController {
     /**
      * 주문 조리 완료 (관리자용)
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/completeorders")
+    @PatchMapping("/admin/orders/{storeId}/{orderId}/completeorders")
     public ResponseEntity<OrderResponseDto> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.completeOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -103,7 +103,7 @@ public class OrderController {
      * 수동처리
      * 상태 : READY -> DONE
      */
-    @PostMapping("/admin/orders/{storeId}/{orderId}/finishorders")
+    @PatchMapping("/admin/orders/{storeId}/{orderId}/finishorders")
     public ResponseEntity<OrderResponseDto> finishOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.finishOrder(storeId, orderId, principal.getName());
         return ResponseEntity.ok(responseDto);
@@ -146,4 +146,45 @@ public class OrderController {
 
         return ResponseEntity.ok(orderService.searchOrders(searchDto, principal.getName(), pageable));
     }
+
+    /**
+     * 일별 매출 조회
+     */
+    @GetMapping("/admin/search/dailysales")
+    public ResponseEntity<List<AdminSalesStaticsDto>> getDailySales(
+            @RequestParam("storeId") Long storeId,
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate,
+            Principal principal
+    ){
+        return ResponseEntity.ok(orderService.getDailySales(storeId, startDate, endDate, principal.getName()));
+    }
+
+    /**
+     * 월별 매출 조회
+     *
+     */
+    @GetMapping("/admin/search/monthlysales")
+    public ResponseEntity<List<AdminSalesStaticsDto>> getMonthlySales(
+            @RequestParam("storeId") Long storeId,
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate,
+            Principal principal){
+        return ResponseEntity.ok(orderService.getMonthlySales(storeId, startDate, endDate, principal.getName()));
+    }
+
+    /**
+     * 메뉴 매출 순위 조회
+     */
+    @GetMapping("/admin/search/menusales")
+    public ResponseEntity<List<AdminMenuSalesStatisticsDto>> getMenuSalesStatics(
+            @RequestParam("storeId") Long storeId,
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate,
+            @RequestParam(value = "type", defaultValue = "ALL") String type,
+            Principal principal
+    ){
+        return ResponseEntity.ok(orderService.getMenuSalesStatics(storeId, startDate,endDate,principal.getName(),type));
+    }
+
 }

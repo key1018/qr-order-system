@@ -3,6 +3,8 @@ package com.project.qr_order_system.persistence;
 import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.model.OrderEntity;
 import com.project.qr_order_system.model.OrderStatus;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,9 +19,20 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, Order
     List<OrderEntity> findByStoreIdAndStatus(Long storeId, OrderStatus status, Sort sort); // 관리자
     List<OrderEntity> findByUserIdAndStatus(Long userId, OrderStatus status, Sort sort);
     // 주문 목록 조회 (전체)
+// 주문 목록 조회 (전체/상태별) : 고객용
+// status가 null이면 전체 조회, null이 아니면 해당 상태로 필터링
+    @Query("select o from OrderEntity o " +
+            "join fetch o.user u " +
+            "join fetch o.store s " +
+            "join fetch o.orderItems oi " +
+            "join fetch oi.product p " +
+            "where o.user.id = :userId " +
+            "and (:status IS NULL OR o.status = :status) " +  // 동적 조건
+            "order by o.createdAt desc"
+    )
+    Slice<OrderEntity> findAllByUserId(@Param("userId") Long userId, @Param("status") OrderStatus status, Pageable pageable);
     List<OrderEntity> findAllByStoreId(Long storeId, Sort sort); // 관리자
-    List<OrderEntity> findAllByUserId(Long userId, Sort sort);
-    // 내가 주문한 가게에서 대기하는 사람 인원(status : Progress)
+//     내가 주문한 가게에서 대기하는 사람 인원(status : Progress)
     // 내 orderId가 10이라고 가정했을 경우
     // ex) select count(0) from OrderEntity where storeId = 1 and status = 'IN_PROGRESS' and orderId < 10;
     long countByStoreIdAndStatusAndIdLessThan(Long storeId, OrderStatus status, Long orderId);

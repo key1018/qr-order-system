@@ -1,10 +1,9 @@
 package com.project.qr_order_system.service;
 
+import com.project.qr_order_system.dto.admin.AdminMenuSalesStatisticsDto;
 import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
-import com.project.qr_order_system.dto.order.OrderItemResponseDto;
-import com.project.qr_order_system.dto.order.OrderRequestDto;
-import com.project.qr_order_system.dto.order.OrderResponseDto;
-import com.project.qr_order_system.dto.order.OrderStatusUpdateDto;
+import com.project.qr_order_system.dto.admin.AdminSalesStaticsDto;
+import com.project.qr_order_system.dto.order.*;
 import com.project.qr_order_system.model.*;
 import com.project.qr_order_system.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,12 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.query.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -108,9 +109,13 @@ public class OrderService {
      * 조리 전 (ORDERED 상태) -> 재고 감소 X
      */
     @Transactional
-    public OrderResponseDto cancelOrder(Long orderId, String email) {
+    public OrderResponseDto cancelOrder(Long storeId, Long orderId, String email) {
 
         OrderEntity cancelOrder = validateCustomerOrder(orderId, email);
+
+        if(!cancelOrder.getStore().getId().equals(storeId)) {
+            throw new IllegalArgumentException("요청하신 매장의 주문이 아닙니다.");
+        }
 
         if(!cancelOrder.getStatus().equals(OrderStatus.ORDERED)) {
             throw new IllegalArgumentException("이미 접수된 주문은 취소할 수 없습니다. 매장에 문의하세요.");
@@ -146,17 +151,18 @@ public class OrderService {
      * 주문 목록 조회 (전체) : 고객용
      */
     @Transactional(readOnly = true)
-    public List<OrderResponseDto> getOrdersByUser(String email) {
+    public Slice<OrderSearchResponseDto> getOrdersByUser(String email, OrderStatus status, Pageable pageable) {
 
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        List<OrderEntity> orders = orderRepository.findAllByUserId(user.getId()
-                , Sort.by(Sort.Direction.DESC, "createdAt"));
+        Slice<OrderEntity> orders = orderRepository.findAllByUserId(user.getId(),status,pageable);
 
-        return orders.stream()
-                .map(this::getOrderResponseDto)
-                .collect(Collectors.toList());
+        if (orders.isEmpty()) {
+            return orders.map(order -> null);
+        }
+
+        return orders.map(this::getOrderResponseDto2);
     }
 
     /**
@@ -428,6 +434,46 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 일별 매출 조회
+     */
+    @Transactional(readOnly = true)
+    public List<AdminSalesStaticsDto> getDailySales(Long storeId,String startDate, String endDate, String email){
+        validateStoreOwner(storeId, email);
+
+        return orderRepositoryImpl.getDailyStatics(storeId, LocalDate.parse(startDate),LocalDate.parse(endDate));
+    }
+
+    /**
+     * 월별 매출 조회
+     */
+    @Transactional(readOnly = true)
+    public List<AdminSalesStaticsDto> getMonthlySales(Long storeId,String startDate, String endDate, String email){
+        validateStoreOwner(storeId, email);
+
+        return orderRepositoryImpl.getMonthlyStatics(storeId, LocalDate.parse(startDate),LocalDate.parse(endDate));
+    }
+
+    /**
+     *메뉴 매출 순위 조회
+     */
+    @Transactional(readOnly = true)
+    public List<AdminMenuSalesStatisticsDto> getMenuSalesStatics(Long storeId,String startDate, String endDate, String email,String type){
+        validateStoreOwner(storeId, email);
+
+        Integer limit = null;
+        boolean isAsc = false;
+
+        if("TOP5".equalsIgnoreCase(type)) {
+            limit = 5;
+        } else if ("BOTTOM5".equalsIgnoreCase(type)){
+            limit = 5;
+            isAsc = true; // 적게 팔린 순
+        }
+
+        return orderRepositoryImpl.getMenuSalesStatics(storeId, LocalDate.parse(startDate),LocalDate.parse(endDate), limit, isAsc);
+    }
+
     // =================================================================
     // 공통 로직 분리
     // =================================================================
@@ -476,7 +522,7 @@ public class OrderService {
         List<OrderItemResponseDto> orderItemList = savedOrder.getOrderItems()
                 .stream()
                 .map(itemDto -> OrderItemResponseDto.builder()
-                        .productId(itemDto.getId())
+                        .productId(itemDto.getProduct().getId()) // OrderItemEntity의 id가 아닌 ProductEntity의 id를 사용
                         .orderPrice(itemDto.getOrderPrice())
                         .productName(itemDto.getProduct().getProductName())
                         .quantity(itemDto.getQuantity())
@@ -493,6 +539,35 @@ public class OrderService {
                 .createAt(savedOrder.getCreatedAt())
                 .usedCardName(savedOrder.getUsedCardName())
                 .orderItems(orderItemList)
+                .build();
+    }
+
+    /**
+     * 주문 목록 리턴용2
+     */
+    public OrderSearchResponseDto getOrderResponseDto2(OrderEntity savedOrder) {
+        List<OrderItemResponseDto> orderItemList = savedOrder.getOrderItems()
+                .stream()
+                .map(item -> OrderItemResponseDto.builder()
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProduct().getProductName())
+                        .orderPrice(item.getOrderPrice())
+                        .quantity(item.getQuantity())
+                        .build())
+                .toList();
+
+        return OrderSearchResponseDto.builder()
+                .storeId(savedOrder.getStore().getId())
+                .storeName(savedOrder.getStore().getStoreName())
+                .storeType(savedOrder.getStore().getStoreType())
+                .orderId(savedOrder.getId())
+                .orderStatus(savedOrder.getStatus())
+                .totalPrice(savedOrder.getTotalPrice())
+                .orderItems(orderItemList)
+                .tableNumber(savedOrder.getTableNumber())
+                .cancelReason(savedOrder.getCancelReason())
+                .usedCardName(savedOrder.getUsedCardName())
+                .createdAt(savedOrder.getCreatedAt())
                 .build();
     }
 }

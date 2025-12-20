@@ -284,23 +284,23 @@ Authorization: Bearer {{adminToken}}
 
 ### 4-4. [관리자] 주문 승낙 (고객 1 - 재고 차감)
 # 이걸 실행하면 '2-5. 고객 1 SSE'에 '조리 중' 알림이 뜸
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/acceptorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/acceptorders
 Authorization: Bearer {{adminToken}}
 
 ### 4-5. [관리자] 주문 승낙 (고객 2 - 재고 차감)
 # 이걸 실행하면 '3-5. 고객 2 SSE'에 '조리 중(대기 1명)' 알림이 뜸
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId2}}/acceptorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId2}}/acceptorders
 Authorization: Bearer {{adminToken}}
 
 ### 4-6. [관리자] 조리 완료 (고객 1 - 조리 완료, 고객 2 - 앞사람 빠짐)
 # 1. '2-5. 고객 1 SSE': "조리 완료(READY)" 알림 도착
 # 2. '3-5. 고객 2 SSE': "대기 순번 감소(waitingP : 0)" 알림 도착
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/completeorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/completeorders
 Authorization: Bearer {{adminToken}}
 
 ### 4-7. [관리자] 주문 완료
 # 1. 고객 1 READY -> DONE 수동 처리
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/finishorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/finishorders
 Authorization: Bearer {{adminToken}}
 
 ### 4-8. [관리자] 리뷰 답글 작성
@@ -333,7 +333,7 @@ Authorization: Bearer {{userToken}}
 ### 5-2. [관리자] 주문 거절 (조리 전)
 # (주의: 4-4 승낙 전 실행해야 함)
 # 사유: STORE_OPERATIONAL_ISSUE (가게 사정)
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/rejectorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/rejectorders
 Content-Type: {{contentType}}
 Authorization: Bearer {{adminToken}}
 
@@ -344,7 +344,7 @@ Authorization: Bearer {{adminToken}}
 ### 5-3. [관리자] 조리 중 강제 취소 (조리 중 - 재고 복구)
 # (주의: 4-4 승낙 후 실행해야 함)
 # 사유: EQUIPMENT_FAILURE_BEFORE_COOKING (설비 고장으로 조리 불가) -> 재료 복구
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId2}}/rejectorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId2}}/rejectorders
 Content-Type: {{contentType}}
 Authorization: Bearer {{adminToken}}
 
@@ -355,7 +355,7 @@ Authorization: Bearer {{adminToken}}
 ### 5-4. [관리자] 조리 중 강제 취소 (재고 폐기 테스트)
 # (주의: 4-4 승낙 후 실행해야 함)
 # 사유: CUSTOMER_REQUEST_AFTER_COOKING (고객 요청) -> 재고 복구 안 됨
-POST {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId2}}/rejectorders
+PATCH {{host}}/qrorder/admin/orders/{{storeId}}/{{orderId}}/rejectorders
 Content-Type: {{contentType}}
 Authorization: Bearer {{adminToken}}
 
@@ -617,4 +617,33 @@ Authorization: Bearer {{adminToken}}
 
 ### 10-11. [고객] "성함"
 GET {{host}}/qrorder/admin/search/orders?storeId={{storeId}}&userName={{userName}}&page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### ==========================================
+### 11. [관리자] 매출 및 메뉴 통계 (Statistics)
+### ==========================================
+
+### 11-1. [일별] 이번 달 일별 매출 통계
+# 결과: 날짜별(YYYY-MM-DD) 매출액과 주문 건수가 나옴
+GET {{host}}/qrorder/admin/search/dailysales?storeId={{storeId}}&startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{adminToken}}
+
+### 11-2. [월별] 올해 월별 매출 통계
+# 결과: 월별(YYYY-MM) 매출액 추이를 볼 수 있음
+GET {{host}}/qrorder/admin/search/monthlysales?storeId={{storeId}}&startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{adminToken}}
+
+### 11-3. [메뉴 순위] 전체 메뉴 판매 순위 (많이 팔린 순)
+# type=ALL (또는 생략 가능)
+GET {{host}}/qrorder/admin/search/menusales?storeId={{storeId}}&startDate=2025-01-01&endDate=2025-12-31&type=ALL
+Authorization: Bearer {{adminToken}}
+
+### 11-4. [메뉴 순위] 효자 상품 Top 5 (많이 팔린 순)
+# type=TOP5 -> 상위 5개만 조회
+GET {{host}}/qrorder/admin/search/menusales?storeId={{storeId}}&startDate=2025-01-01&endDate=2025-12-31&type=TOP5
+Authorization: Bearer {{adminToken}}
+
+### 11-5. [메뉴 순위] 아픈 손가락 Bottom 5 (적게 팔린 순)
+# type=BOTTOM5 -> 판매량 저조한 하위 5개 조회 (메뉴 삭제 고민용)
+GET {{host}}/qrorder/admin/search/menusales?storeId={{storeId}}&startDate=2025-01-01&endDate=2025-12-31&type=BOTTOM5
 Authorization: Bearer {{adminToken}}

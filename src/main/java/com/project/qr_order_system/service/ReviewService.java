@@ -109,7 +109,7 @@ public class ReviewService {
         }
 
         // reviews : Slice 자체
-        // getContent() : List<ReviewEntity> 데이터 리스트
+        // getContent() : Slice안에 있는 List<ReviewEntity> 데이터 리스트
         // stream : List<ReviewEntity> 데이터 리스트 하나씩 처리해서 reviewId 꺼냄
         // => 값 : [1,2]
         List<Long> reviewIds = reviews.getContent().stream()

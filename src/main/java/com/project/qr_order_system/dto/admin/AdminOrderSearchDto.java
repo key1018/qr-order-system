@@ -18,8 +18,8 @@ public class AdminOrderSearchDto {
     private LocalDateTime startDate;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime endDate;
-    private Integer minPrice; // 최소 주문 금액
-    private Integer maxPrice; // 최대 주문 금액
+    private Long minPrice; // 최소 주문 금액
+    private Long maxPrice; // 최대 주문 금액
     private Long userId; // 특정 회원 조회
     private Long menuId; // 특정 메뉴 조회
 
