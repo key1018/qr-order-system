@@ -1,5 +1,8 @@
 package com.project.qr_order_system.controller;
 
+import com.project.qr_order_system.dto.common.ApiRequest;
+import com.project.qr_order_system.dto.common.ApiResponse;
+import com.project.qr_order_system.dto.common.ApiResponseHelper;
 import com.project.qr_order_system.dto.payment.PaymentCardRegisterRequestDto;
 import com.project.qr_order_system.dto.payment.PaymentCardResponseDto;
 import com.project.qr_order_system.service.PaymentCardService;
@@ -23,11 +26,11 @@ public class PaymentCardController {
      * 카드 등록 (고객용)
      */
     @PostMapping("/registercard")
-    public ResponseEntity<PaymentCardResponseDto> registerCard(@RequestBody PaymentCardRegisterRequestDto requestDto, Principal principal) {
+    public ResponseEntity<ApiResponse<PaymentCardResponseDto>> registerCard(@RequestBody ApiRequest<PaymentCardRegisterRequestDto> request, Principal principal) {
 
-        PaymentCardResponseDto responseDto = paymentCardService.registerCard(requestDto, principal.getName());
+        PaymentCardResponseDto responseDto = paymentCardService.registerCard(request.getData(), principal.getName());
 
-        return ResponseEntity.ok(responseDto);
+        return ApiResponseHelper.success(responseDto, "카드가 성공적으로 등록되었습니다");
     }
 
 }

@@ -1,5 +1,8 @@
 package com.project.qr_order_system.controller;
 
+import com.project.qr_order_system.dto.common.ApiRequest;
+import com.project.qr_order_system.dto.common.ApiResponse;
+import com.project.qr_order_system.dto.common.ApiResponseHelper;
 import com.project.qr_order_system.dto.user.UserLoginRequestDto;
 import com.project.qr_order_system.dto.user.UserLoginResponseDto;
 import com.project.qr_order_system.dto.user.UserSignRequestDto;
@@ -21,14 +24,14 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestBody UserSignRequestDto requestDto){
-        userService.signup(requestDto);
-        return ResponseEntity.ok("회원가입 성공");
+    public ResponseEntity<ApiResponse<Void>> signup(@RequestBody ApiRequest<UserSignRequestDto> request){
+        userService.signup(request.getData());
+        return ApiResponseHelper.success("회원가입이 완료되었습니다");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserLoginResponseDto> login(@Valid @RequestBody UserLoginRequestDto requestDto){
-        UserLoginResponseDto responseDto = userService.login(requestDto);
-        return ResponseEntity.ok(responseDto);
+    public ResponseEntity<ApiResponse<UserLoginResponseDto>> login(@Valid @RequestBody ApiRequest<UserLoginRequestDto> request){
+        UserLoginResponseDto responseDto = userService.login(request.getData());
+        return ApiResponseHelper.success(responseDto, "로그인 성공");
     }
 }

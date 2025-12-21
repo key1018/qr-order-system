@@ -2,6 +2,9 @@ package com.project.qr_order_system.controller;
 
 import com.project.qr_order_system.dto.cart.CartAddRequestDto;
 import com.project.qr_order_system.dto.cart.CartAddResponseDto;
+import com.project.qr_order_system.dto.common.ApiRequest;
+import com.project.qr_order_system.dto.common.ApiResponse;
+import com.project.qr_order_system.dto.common.ApiResponseHelper;
 import com.project.qr_order_system.service.CartService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,35 +23,35 @@ public class CartController {
     private final CartService cartService;
 
     @PostMapping("/users/cart/addcart")
-    public ResponseEntity<String> addCart(@RequestBody CartAddRequestDto requestDto
+    public ResponseEntity<ApiResponse<Void>> addCart(@RequestBody ApiRequest<CartAddRequestDto> request
                                           , Principal principal) {
-        cartService.addItemToCart(requestDto, principal.getName());
-        return ResponseEntity.ok("장바구니에 상품을 담았습니다.");
+        cartService.addItemToCart(request.getData(), principal.getName());
+        return ApiResponseHelper.success("장바구니에 상품을 담았습니다");
     }
 
     @GetMapping("/users/cart/getcartlist")
-    public ResponseEntity<List<CartAddResponseDto>> getCartLists(Principal principal) {
-        return ResponseEntity.ok(cartService.getCartList(principal.getName()));
+    public ResponseEntity<ApiResponse<List<CartAddResponseDto>>> getCartLists(Principal principal) {
+        return ApiResponseHelper.success(cartService.getCartList(principal.getName()), "장바구니 목록 조회 성공");
     }
 
     @PatchMapping("/users/cart/updatecartitemquantity")
-    public ResponseEntity<String> updateCartItemQuantity(@RequestBody CartAddRequestDto requestDto
+    public ResponseEntity<ApiResponse<Void>> updateCartItemQuantity(@RequestBody ApiRequest<CartAddRequestDto> request
                                                         , Principal principal) {
-        cartService.updateCartItemQuantity(requestDto, principal.getName());
-        return ResponseEntity.ok("수량이 변경되었습니다.");
+        cartService.updateCartItemQuantity(request.getData(), principal.getName());
+        return ApiResponseHelper.success("수량이 변경되었습니다");
     }
 
     @DeleteMapping("/users/cart/{productId}/deleteproductidfromcart")
-    public ResponseEntity<String> deleteProductFromCart(@PathVariable("productId") Long productId
+    public ResponseEntity<ApiResponse<Void>> deleteProductFromCart(@PathVariable("productId") Long productId
                                                         , Principal principal) {
         cartService.deleteCart(productId, principal.getName());
-        return ResponseEntity.ok("상품이 삭제되었습니다.");
+        return ApiResponseHelper.success("상품이 삭제되었습니다");
     }
 
     @DeleteMapping("/users/cart/clearcart")
-    public ResponseEntity<String> clearCart(Principal principal) {
+    public ResponseEntity<ApiResponse<Void>> clearCart(Principal principal) {
         cartService.clearCart(principal.getName());
-        return ResponseEntity.ok("장바구니를 비웠습니다.");
+        return ApiResponseHelper.success("장바구니를 비웠습니다");
     }
 
 }

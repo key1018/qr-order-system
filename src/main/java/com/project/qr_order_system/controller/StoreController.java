@@ -1,25 +1,23 @@
 package com.project.qr_order_system.controller;
 
 import com.google.zxing.WriterException;
+import com.project.qr_order_system.dto.common.ApiRequest;
+import com.project.qr_order_system.dto.common.ApiResponse;
+import com.project.qr_order_system.dto.common.ApiResponseHelper;
 import com.project.qr_order_system.dto.store.StoreCreateRequestDto;
 import com.project.qr_order_system.dto.store.StoreResponseDto;
-import com.project.qr_order_system.model.StoreEntity;
-import com.project.qr_order_system.persistence.StoreRepository;
 import com.project.qr_order_system.service.QrCodeService;
 import com.project.qr_order_system.service.StoreService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -35,14 +33,15 @@ public class StoreController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/createstore")
-    public ResponseEntity<StoreResponseDto> createStore(@Valid @RequestBody StoreCreateRequestDto requestDto, Principal principal) {
-        System.out.println("StoreCreateRequestDto" + requestDto);
-        StoreResponseDto responseDto = storeService.createStore(requestDto,principal.getName());
-        return ResponseEntity.ok(responseDto);
+    public ResponseEntity<ApiResponse<StoreResponseDto>> createStore(@Valid @RequestBody ApiRequest<StoreCreateRequestDto> request, Principal principal) {
+        System.out.println("StoreCreateRequestDto" + request.getData());
+        StoreResponseDto responseDto = storeService.createStore(request.getData(),principal.getName());
+        return ApiResponseHelper.success(responseDto, "매장이 성공적으로 생성되었습니다");
     }
 
     /**
      * QR 코드 생성 API
+     * 이미지 바이너리를 반환하므로 에러는 예외로 던져서 GlobalExceptionHandler에서 처리
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(
@@ -54,23 +53,13 @@ public class StoreController {
             @RequestParam(value = "tableNumber", required = false) Integer tableNumber, // (tableNumber는 필수 아님)
             Principal principal
     ) throws WriterException, IOException {
-        try {
-            // 본인 매장이 맞는지 검증 (역할 체크는 @PreAuthorize로 처리)
-            storeService.validateStoreOwner(principal.getName(), storeId);
+        // 본인 매장이 맞는지 검증 (역할 체크는 @PreAuthorize로 처리)
+        // SecurityException이나 IllegalArgumentException은 GlobalExceptionHandler에서 처리됨
+        storeService.validateStoreOwner(principal.getName(), storeId);
 
-            // QR 코드 이미지 생성
-            byte[] qrCodeImage = qrCodeService.createQrCodeImage(storeId, tableNumber);
+        // QR 코드 이미지 생성
+        byte[] qrCodeImage = qrCodeService.createQrCodeImage(storeId, tableNumber);
 
-            return ResponseEntity.ok(qrCodeImage);
-
-        } catch (SecurityException e) {
-            // 403 Forbidden (권한 없음)
-            log.warn("매장 접근 권한 없음: user={}, storeId={}", principal.getName(), storeId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        } catch (IllegalArgumentException e) {
-            // 404 Not Found (매장 없음 등)
-            log.warn("잘못된 요청: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        return ResponseEntity.ok(qrCodeImage);
     }
 }

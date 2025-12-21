@@ -3,6 +3,9 @@ package com.project.qr_order_system.controller;
 import com.project.qr_order_system.dto.admin.AdminMenuSalesStatisticsDto;
 import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.dto.admin.AdminSalesStaticsDto;
+import com.project.qr_order_system.dto.common.ApiRequest;
+import com.project.qr_order_system.dto.common.ApiResponse;
+import com.project.qr_order_system.dto.common.ApiResponseHelper;
 import com.project.qr_order_system.dto.order.*;
 import com.project.qr_order_system.dto.review.ReviewResponseDto;
 import com.project.qr_order_system.model.OrderStatus;
@@ -33,9 +36,9 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/users/orders/createorders")
-    public ResponseEntity<OrderResponseDto> createOrder(@RequestBody OrderRequestDto requestDto, Principal principal) {
-        OrderResponseDto responseDto = orderService.addOrder(requestDto, principal.getName());
-        return ResponseEntity.ok(responseDto);
+    public ResponseEntity<ApiResponse<OrderResponseDto>> createOrder(@RequestBody ApiRequest<OrderRequestDto> request, Principal principal) {
+        OrderResponseDto responseDto = orderService.addOrder(request.getData(), principal.getName());
+        return ApiResponseHelper.success(responseDto, "주문이 성공적으로 생성되었습니다");
     }
 
     /**
@@ -43,12 +46,12 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/users/orders/{storeId}/{orderId}/cancelorders")
-    public ResponseEntity<OrderResponseDto> cancelOrder(
+    public ResponseEntity<ApiResponse<OrderResponseDto>> cancelOrder(
             @PathVariable("storeId") Long storeId, 
             @PathVariable("orderId") Long orderId,
              Principal principal) {
         OrderResponseDto responseDto = orderService.cancelOrder(storeId, orderId, principal.getName());
-        return ResponseEntity.ok(responseDto);
+        return ApiResponseHelper.success(responseDto, "주문이 취소되었습니다");
     }
 
     /**
@@ -56,7 +59,7 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/users/orders/orderlist")
-    public ResponseEntity<Slice<OrderSearchResponseDto>> getUserOrderStatusList(
+    public ResponseEntity<ApiResponse<Slice<OrderSearchResponseDto>>> getUserOrderStatusList(
             @RequestParam(value = "status", required = false) OrderStatus status,
             Principal principal,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
@@ -64,7 +67,7 @@ public class OrderController {
 
         Slice<OrderSearchResponseDto> myOrders = orderService.getOrdersByUser(principal.getName(), status, pageable);
 
-        return ResponseEntity.ok(myOrders);
+        return ApiResponseHelper.success(myOrders, "주문 목록 조회 성공");
     }
 
     /**
@@ -72,14 +75,14 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/rejectorders")
-    public ResponseEntity<OrderResponseDto> rejectOrder(
+    public ResponseEntity<ApiResponse<OrderResponseDto>> rejectOrder(
             @PathVariable("storeId") Long storeId,
             @PathVariable("orderId") Long orderId,
             Principal principal,
-            @RequestBody OrderRejectRequestDto rejectReason
+            @RequestBody ApiRequest<OrderRejectRequestDto> request
             ) {
-        OrderResponseDto responseDto = orderService.rejectOrder(storeId, orderId, principal.getName(), rejectReason.getReason());
-        return ResponseEntity.ok(responseDto);
+        OrderResponseDto responseDto = orderService.rejectOrder(storeId, orderId, principal.getName(), request.getData().getReason());
+        return ApiResponseHelper.success(responseDto, "주문이 거절되었습니다");
     }
 
     /**
@@ -87,9 +90,9 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/acceptorders")
-    public ResponseEntity<OrderResponseDto> acceptOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
+    public ResponseEntity<ApiResponse<OrderResponseDto>> acceptOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.acceptOrder(storeId, orderId, principal.getName());
-        return ResponseEntity.ok(responseDto);
+        return ApiResponseHelper.success(responseDto, "주문이 승낙되었습니다");
     }
 
     /**
@@ -97,9 +100,9 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/completeorders")
-    public ResponseEntity<OrderResponseDto> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
+    public ResponseEntity<ApiResponse<OrderResponseDto>> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.completeOrder(storeId, orderId, principal.getName());
-        return ResponseEntity.ok(responseDto);
+        return ApiResponseHelper.success(responseDto, "주문 조리가 완료되었습니다");
     }
 
     /**
@@ -109,9 +112,9 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/finishorders")
-    public ResponseEntity<OrderResponseDto> finishOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
+    public ResponseEntity<ApiResponse<OrderResponseDto>> finishOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.finishOrder(storeId, orderId, principal.getName());
-        return ResponseEntity.ok(responseDto);
+        return ApiResponseHelper.success(responseDto, "주문이 최종 완료되었습니다");
     }
 
     /**
@@ -119,7 +122,7 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/orders/{storeId}/orderlist")
-    public ResponseEntity<Slice<OrderStoreSearchResponseDto>> getOrderStatusList(
+    public ResponseEntity<ApiResponse<Slice<OrderStoreSearchResponseDto>>> getOrderStatusList(
             @PathVariable("storeId") Long storeId,
             @RequestParam(value = "status", required = false) OrderStatus status,
             Principal principal,
@@ -127,7 +130,7 @@ public class OrderController {
 
     ) {
         Slice<OrderStoreSearchResponseDto> storeOrders = orderService.getOrdersByStore(storeId, status, principal.getName(),pageable);
-        return ResponseEntity.ok(storeOrders);
+        return ApiResponseHelper.success(storeOrders, "주문 목록 조회 성공");
     }
 
     /**
@@ -136,14 +139,14 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/orders")
-    public ResponseEntity<List<OrderResponseDto>> searchOrders(
+    public ResponseEntity<ApiResponse<List<OrderResponseDto>>> searchOrders(
             @ModelAttribute AdminOrderSearchDto searchDto,
             Principal principal,
             Pageable pageable
     ){
         log.info("관리자 상세 검색 요청 - StoreId: {}, 조건: {}", searchDto.getStoreId(), searchDto);
 
-        return ResponseEntity.ok(orderService.searchOrders(searchDto, principal.getName(), pageable));
+        return ApiResponseHelper.success(orderService.searchOrders(searchDto, principal.getName(), pageable), "주문 검색 성공");
     }
 
     /**
@@ -151,13 +154,13 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/dailysales")
-    public ResponseEntity<List<AdminSalesStaticsDto>> getDailySales(
+    public ResponseEntity<ApiResponse<List<AdminSalesStaticsDto>>> getDailySales(
             @RequestParam("storeId") Long storeId,
             @RequestParam("startDate") String startDate,
             @RequestParam("endDate") String endDate,
             Principal principal
     ){
-        return ResponseEntity.ok(orderService.getDailySales(storeId, startDate, endDate, principal.getName()));
+        return ApiResponseHelper.success(orderService.getDailySales(storeId, startDate, endDate, principal.getName()), "일별 매출 조회 성공");
     }
 
     /**
@@ -166,12 +169,12 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/monthlysales")
-    public ResponseEntity<List<AdminSalesStaticsDto>> getMonthlySales(
+    public ResponseEntity<ApiResponse<List<AdminSalesStaticsDto>>> getMonthlySales(
             @RequestParam("storeId") Long storeId,
             @RequestParam("startDate") String startDate,
             @RequestParam("endDate") String endDate,
             Principal principal){
-        return ResponseEntity.ok(orderService.getMonthlySales(storeId, startDate, endDate, principal.getName()));
+        return ApiResponseHelper.success(orderService.getMonthlySales(storeId, startDate, endDate, principal.getName()), "월별 매출 조회 성공");
     }
 
     /**
@@ -179,14 +182,14 @@ public class OrderController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/menusales")
-    public ResponseEntity<List<AdminMenuSalesStatisticsDto>> getMenuSalesStatics(
+    public ResponseEntity<ApiResponse<List<AdminMenuSalesStatisticsDto>>> getMenuSalesStatics(
             @RequestParam("storeId") Long storeId,
             @RequestParam("startDate") String startDate,
             @RequestParam("endDate") String endDate,
             @RequestParam(value = "type", defaultValue = "ALL") String type,
             Principal principal
     ){
-        return ResponseEntity.ok(orderService.getMenuSalesStatics(storeId, startDate,endDate,principal.getName(),type));
+        return ApiResponseHelper.success(orderService.getMenuSalesStatics(storeId, startDate,endDate,principal.getName(),type), "메뉴 매출 순위 조회 성공");
     }
 
 }
