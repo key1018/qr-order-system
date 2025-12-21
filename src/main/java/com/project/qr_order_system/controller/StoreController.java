@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,7 @@ public class StoreController {
     /**
      * 매장 생성 API
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/createstore")
     public ResponseEntity<StoreResponseDto> createStore(@Valid @RequestBody StoreCreateRequestDto requestDto, Principal principal) {
         System.out.println("StoreCreateRequestDto" + requestDto);
@@ -42,6 +44,7 @@ public class StoreController {
     /**
      * QR 코드 생성 API
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(
             value = "/{storeId}/qr-code",
             produces = MediaType.IMAGE_PNG_VALUE // (응답 타입 = PNG 이미지)
@@ -52,7 +55,7 @@ public class StoreController {
             Principal principal
     ) throws WriterException, IOException {
         try {
-            // 본인 매장이 맞는지 검증
+            // 본인 매장이 맞는지 검증 (역할 체크는 @PreAuthorize로 처리)
             storeService.validateStoreOwner(principal.getName(), storeId);
 
             // QR 코드 이미지 생성

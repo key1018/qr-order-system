@@ -465,17 +465,15 @@ public class OrderService {
     // =================================================================
 
     /**
-     * 관리자 확인용 메서드
+     * 매장 소유자 확인용 메서드
+     * 역할 체크는 @PreAuthorize로 처리되므로 매장 소유자 체크만 수행
      */
     void validateStoreOwner(Long storeId, String email) {
         StoreEntity store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("매장을 찾을 수 없습니다."));
 
-        UserEntity admin = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        if (admin.getRole() != Role.ROLE_ADMIN) {
-            throw new SecurityException("관리자 권한이 없습니다.");
+        if (store.getOwner() == null) {
+            throw new IllegalArgumentException("매장 소유주가 없습니다.");
         }
 
         if (!store.getOwner().getEmail().equals(email)) {

@@ -14,6 +14,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -30,6 +31,7 @@ public class OrderController {
     /**
      * 주문 등록 (고객용)
      */
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/users/orders/createorders")
     public ResponseEntity<OrderResponseDto> createOrder(@RequestBody OrderRequestDto requestDto, Principal principal) {
         OrderResponseDto responseDto = orderService.addOrder(requestDto, principal.getName());
@@ -39,6 +41,7 @@ public class OrderController {
     /**
      * 주문 취소 (고객용)
      */
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/users/orders/{storeId}/{orderId}/cancelorders")
     public ResponseEntity<OrderResponseDto> cancelOrder(
             @PathVariable("storeId") Long storeId, 
@@ -51,6 +54,7 @@ public class OrderController {
     /**
      * 주문 목록 조회 (전체/상태별) : 고객용
      */
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/users/orders/orderlist")
     public ResponseEntity<Slice<OrderSearchResponseDto>> getUserOrderStatusList(
             @RequestParam(value = "status", required = false) OrderStatus status,
@@ -66,6 +70,7 @@ public class OrderController {
     /**
      * 주문 취소 (관리자용)
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/rejectorders")
     public ResponseEntity<OrderResponseDto> rejectOrder(
             @PathVariable("storeId") Long storeId,
@@ -80,6 +85,7 @@ public class OrderController {
     /**
      * 주문 승낙 (관리자용)
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/acceptorders")
     public ResponseEntity<OrderResponseDto> acceptOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.acceptOrder(storeId, orderId, principal.getName());
@@ -89,6 +95,7 @@ public class OrderController {
     /**
      * 주문 조리 완료 (관리자용)
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/completeorders")
     public ResponseEntity<OrderResponseDto> completeOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.completeOrder(storeId, orderId, principal.getName());
@@ -100,6 +107,7 @@ public class OrderController {
      * 수동처리
      * 상태 : READY -> DONE
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/admin/orders/{storeId}/{orderId}/finishorders")
     public ResponseEntity<OrderResponseDto> finishOrder(@PathVariable("storeId") Long storeId, @PathVariable("orderId") Long orderId, Principal principal) {
         OrderResponseDto responseDto = orderService.finishOrder(storeId, orderId, principal.getName());
@@ -109,6 +117,7 @@ public class OrderController {
     /**
      * 주문 목록 조회 (전체/상태별) : 관리자용
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/orders/{storeId}/orderlist")
     public ResponseEntity<Slice<OrderStoreSearchResponseDto>> getOrderStatusList(
             @PathVariable("storeId") Long storeId,
@@ -125,6 +134,7 @@ public class OrderController {
      * 상세 주문 조회
      * ex) /qrorder/admin/search/orders?storeId=1&page=0&size=10
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/orders")
     public ResponseEntity<List<OrderResponseDto>> searchOrders(
             @ModelAttribute AdminOrderSearchDto searchDto,
@@ -139,6 +149,7 @@ public class OrderController {
     /**
      * 일별 매출 조회
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/dailysales")
     public ResponseEntity<List<AdminSalesStaticsDto>> getDailySales(
             @RequestParam("storeId") Long storeId,
@@ -153,6 +164,7 @@ public class OrderController {
      * 월별 매출 조회
      *
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/monthlysales")
     public ResponseEntity<List<AdminSalesStaticsDto>> getMonthlySales(
             @RequestParam("storeId") Long storeId,
@@ -165,6 +177,7 @@ public class OrderController {
     /**
      * 메뉴 매출 순위 조회
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/search/menusales")
     public ResponseEntity<List<AdminMenuSalesStatisticsDto>> getMenuSalesStatics(
             @RequestParam("storeId") Long storeId,
