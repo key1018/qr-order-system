@@ -3,10 +3,7 @@ package com.project.qr_order_system.controller;
 import com.project.qr_order_system.dto.admin.AdminMenuSalesStatisticsDto;
 import com.project.qr_order_system.dto.admin.AdminOrderSearchDto;
 import com.project.qr_order_system.dto.admin.AdminSalesStaticsDto;
-import com.project.qr_order_system.dto.order.OrderRejectRequestDto;
-import com.project.qr_order_system.dto.order.OrderRequestDto;
-import com.project.qr_order_system.dto.order.OrderResponseDto;
-import com.project.qr_order_system.dto.order.OrderSearchResponseDto;
+import com.project.qr_order_system.dto.order.*;
 import com.project.qr_order_system.dto.review.ReviewResponseDto;
 import com.project.qr_order_system.model.OrderStatus;
 import com.project.qr_order_system.service.OrderService;
@@ -113,23 +110,15 @@ public class OrderController {
      * 주문 목록 조회 (전체/상태별) : 관리자용
      */
     @GetMapping("/admin/orders/{storeId}/orderlist")
-    public ResponseEntity<List<OrderResponseDto>> getOrderStatusList(
+    public ResponseEntity<Slice<OrderStoreSearchResponseDto>> getOrderStatusList(
             @PathVariable("storeId") Long storeId,
             @RequestParam(value = "status", required = false) OrderStatus status,
-            Principal principal
+            Principal principal,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+
     ) {
-
-        List<OrderResponseDto> responseDtos;
-
-        if(status == null) {
-            // 전체 조회
-            responseDtos = orderService.getOrdersByStore(storeId, principal.getName());
-        } else {
-            // 상태별 조회
-            responseDtos = orderService.getOrdersStatusByStore(storeId, principal.getName(), status);
-        }
-
-        return ResponseEntity.ok(responseDtos);
+        Slice<OrderStoreSearchResponseDto> storeOrders = orderService.getOrdersByStore(storeId, status, principal.getName(),pageable);
+        return ResponseEntity.ok(storeOrders);
     }
 
     /**

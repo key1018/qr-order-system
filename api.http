@@ -28,7 +28,7 @@ Authorization: Bearer {{adminToken}}
 
 {
     "storeName": "testStore",
-    "storeType" : "TAKEOUT"
+    "storeType" : "DINE_IN"
 }
 
 > {%

@@ -31,7 +31,16 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, Order
             "order by o.createdAt desc"
     )
     Slice<OrderEntity> findAllByUserId(@Param("userId") Long userId, @Param("status") OrderStatus status, Pageable pageable);
-    List<OrderEntity> findAllByStoreId(Long storeId, Sort sort); // 관리자
+    @Query("select o from OrderEntity o " +
+           "join fetch o.user u " +
+           "join fetch o.store s " +
+           "join fetch o.orderItems oi " +
+           "join fetch oi.product p " +
+           "where o.store.id = :storeId " +
+           "and (:status is NULL OR o.status = :status) " +
+           "order by o.createdAt desc"
+    )
+    Slice<OrderEntity> findAllByStoreId(@Param("storeId") Long storeId, @Param("status") OrderStatus status, Pageable pageable); // 관리자
 //     내가 주문한 가게에서 대기하는 사람 인원(status : Progress)
     // 내 orderId가 10이라고 가정했을 경우
     // ex) select count(0) from OrderEntity where storeId = 1 and status = 'IN_PROGRESS' and orderId < 10;

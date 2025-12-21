@@ -168,18 +168,18 @@ public class OrderService {
     /**
      * 주문 목록 조회 (상태별) : 고객용
      */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDto> getOrdersStatusByUser(String email, OrderStatus status) {
-
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        List<OrderEntity> orders = orderRepository.findByUserIdAndStatus(user.getId(), status
-                , Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        return orders.stream().map(this::getOrderResponseDto)
-                .collect(Collectors.toList());
-    }
+//    @Transactional(readOnly = true)
+//    public List<OrderResponseDto> getOrdersStatusByUser(String email, OrderStatus status) {
+//
+//        UserEntity user = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+//
+//        List<OrderEntity> orders = orderRepository.findByUserIdAndStatus(user.getId(), status
+//                , Sort.by(Sort.Direction.DESC, "createdAt"));
+//
+//        return orders.stream().map(this::getOrderResponseDto)
+//                .collect(Collectors.toList());
+//    }
 
     // =================================================================
     // 사장님(관리자) 관련 비즈니스 로직
@@ -393,31 +393,17 @@ public class OrderService {
      * 주문 목록 조회 (전체) : 관리자용
      */
     @Transactional(readOnly = true)
-    public List<OrderResponseDto> getOrdersByStore(Long storeId, String email) {
+    public Slice<OrderStoreSearchResponseDto> getOrdersByStore(Long storeId, OrderStatus status, String email, Pageable pageable) {
 
         validateStoreOwner(storeId, email);
 
-        List<OrderEntity> orders = orderRepository.findAllByStoreId(storeId
-                , Sort.by(Sort.Direction.DESC, "createdAt"));
+        Slice<OrderEntity> orders = orderRepository.findAllByStoreId(storeId,status,pageable);
 
-        return orders.stream()
-                .map(this::getOrderResponseDto)
-                .collect(Collectors.toList());
-    }
+        if (orders.isEmpty()) {
+            return orders.map(order -> null);
+        }
 
-    /**
-     * 주문 목록 조회 (상태별) : 관리자용
-     */
-    @Transactional(readOnly = true)
-    public List<OrderResponseDto> getOrdersStatusByStore(Long storeId, String email, OrderStatus status) {
-
-        validateStoreOwner(storeId, email);
-
-        List<OrderEntity> orders = orderRepository.findByStoreIdAndStatus(storeId, status
-                , Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        return orders.stream().map(this::getOrderResponseDto)
-                .collect(Collectors.toList());
+        return orders.map(this::getOrderStoreResponseDto);
     }
 
     /**
@@ -568,6 +554,38 @@ public class OrderService {
                 .cancelReason(savedOrder.getCancelReason())
                 .usedCardName(savedOrder.getUsedCardName())
                 .createdAt(savedOrder.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * 관리자용 주문 목록 리턴용
+     */
+    public OrderStoreSearchResponseDto getOrderStoreResponseDto(OrderEntity savedOrder) {
+        List<OrderItemResponseDto> orderItemList = savedOrder.getOrderItems()
+                .stream()
+                .map(item -> OrderItemResponseDto.builder()
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProduct().getProductName())
+                        .orderPrice(item.getOrderPrice())
+                        .quantity(item.getQuantity())
+                        .build())
+                .toList();
+
+        return OrderStoreSearchResponseDto.builder()
+                .orderId(savedOrder.getId())
+                .orderedAt(savedOrder.getCreatedAt())
+                .orderStatus(savedOrder.getStatus())
+                .userId(savedOrder.getUser().getId())
+                .userName(savedOrder.getUser().getName())
+                .userEmail(savedOrder.getUser().getEmail())
+                .storeId(savedOrder.getStore().getId())
+                .storeName(savedOrder.getStore().getStoreName())
+                .tableNumber(savedOrder.getTableNumber())
+                .isTakeOut(savedOrder.getTableNumber() == null)
+                .orderItems(orderItemList)
+                .totalPrice(savedOrder.getTotalPrice())
+                .cancelReason(savedOrder.getCancelReason())
+                .usedCardName(savedOrder.getUsedCardName())
                 .build();
     }
 }
