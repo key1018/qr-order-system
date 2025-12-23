@@ -20,3 +20,5 @@ public class ApiRequest<T> {
     private LocalDateTime timestamp;    // 요청 시간 (선택사항)
 }
 
+
+
