@@ -5,10 +5,9 @@ import com.project.qr_order_system.dto.kafka.OrderEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Kafka Producer Service
@@ -31,12 +30,14 @@ public class KafkaProducerService {
     
     /**
      * 주문 생성 이벤트 발행
+     * 동기(Sync) 방식으로 전송하여 실패 시 예외를 발생시킴 -> 트랜잭션 롤백 유도
      * 
      * @param orderId 주문 ID (Kafka Key로 사용 - 순서 보장)
      * @param storeId 매장 ID
      * @param userId 사용자 ID
      * @param totalPrice 총 주문 금액
      * @param orderItems 주문 상세 항목 리스트
+     * @throws RuntimeException Kafka 이벤트 발행 실패 시 발생 (3초 이상 지연 시 TimeoutException 포함)
      */
     public void sendOrderCreatedEvent(
             Long orderId,
@@ -45,22 +46,38 @@ public class KafkaProducerService {
             Integer totalPrice,
             java.util.List<OrderEvent.OrderItemEvent> orderItems
     ) {
-        OrderEvent event = OrderEvent.builder()
-                .eventType(EventType.CREATE)
-                .orderId(orderId)
-                .storeId(storeId)
-                .userId(userId)
-                .newStatus(com.project.qr_order_system.model.OrderStatus.ORDERED)
-                .totalPrice(totalPrice)
-                .orderItems(orderItems)
-                .timestamp(java.time.LocalDateTime.now())
-                .build();
-        
-        sendEvent(orderId, event);
+        try {
+            OrderEvent event = OrderEvent.builder()
+                    .eventType(EventType.CREATE)
+                    .orderId(orderId)
+                    .storeId(storeId)
+                    .userId(userId)
+                    .newStatus(com.project.qr_order_system.model.OrderStatus.ORDERED)
+                    .totalPrice(totalPrice)
+                    .orderItems(orderItems)
+                    .timestamp(java.time.LocalDateTime.now())
+                    .build();
+            
+            // orderId를 Key로 사용하여 순서 보장
+            String key = String.valueOf(orderId);
+            
+            // 동기 방식으로 전송 (최대 3초 대기)
+            // 3초 이상 지연되면 TimeoutException 발생
+            kafkaTemplate.send(TOPIC_NAME, key, event)
+                    .get(3, TimeUnit.SECONDS);
+            
+            log.info("주문 생성 이벤트 발행 성공: orderId={}, eventType={}", 
+                    orderId, event.getEventType());
+            
+        } catch (Exception e) {
+            log.error("주문 생성 이벤트 발행 실패! 트랜잭션을 롤백합니다. orderId={}", orderId, e);
+            throw new RuntimeException("주문 생성 이벤트 발행 실패: orderId=" + orderId, e);
+        }
     }
     
     /**
      * 주문 상태 변경 이벤트 발행
+     * 동기(Sync) 방식으로 전송하여 실패 시 예외를 발생시킴 -> 트랜잭션 롤백 유도
      * 
      * @param orderId 주문 ID (Kafka Key로 사용 - 순서 보장)
      * @param storeId 매장 ID
@@ -72,6 +89,7 @@ public class KafkaProducerService {
      * @param cancelReason 취소/거절 사유
      * @param restoreStock 재고 복구 여부
      * @param updatedBy 수정자
+     * @throws RuntimeException Kafka 이벤트 발행 실패 시 발생 (3초 이상 지연 시 TimeoutException 포함)
      */
     public void sendOrderUpdatedEvent(
             Long orderId,
@@ -85,26 +103,42 @@ public class KafkaProducerService {
             Boolean restoreStock,
             String updatedBy
     ) {
-        OrderEvent event = OrderEvent.builder()
-                .eventType(EventType.UPDATE)
-                .orderId(orderId)
-                .storeId(storeId)
-                .userId(userId)
-                .previousStatus(previousStatus)
-                .newStatus(newStatus)
-                .waitingPosition(waitingPosition)
-                .waitingTime(waitingTime)
-                .cancelReason(cancelReason)
-                .restoreStock(restoreStock)
-                .timestamp(java.time.LocalDateTime.now())
-                .updatedBy(updatedBy)
-                .build();
-        
-        sendEvent(orderId, event);
+        try {
+            OrderEvent event = OrderEvent.builder()
+                    .eventType(EventType.UPDATE)
+                    .orderId(orderId)
+                    .storeId(storeId)
+                    .userId(userId)
+                    .previousStatus(previousStatus)
+                    .newStatus(newStatus)
+                    .waitingPosition(waitingPosition)
+                    .waitingTime(waitingTime)
+                    .cancelReason(cancelReason)
+                    .restoreStock(restoreStock)
+                    .timestamp(java.time.LocalDateTime.now())
+                    .updatedBy(updatedBy)
+                    .build();
+            
+            // orderId를 Key로 사용하여 순서 보장
+            String key = String.valueOf(orderId);
+            
+            // 동기 방식으로 전송 (최대 3초 대기)
+            // 3초 이상 지연되면 TimeoutException 발생
+            kafkaTemplate.send(TOPIC_NAME, key, event)
+                    .get(3, TimeUnit.SECONDS);
+            
+            log.info("주문 상태 변경 이벤트 발행 성공: orderId={}, eventType={}", 
+                    orderId, event.getEventType());
+            
+        } catch (Exception e) {
+            log.error("주문 상태 변경 이벤트 발행 실패! 트랜잭션을 롤백합니다. orderId={}", orderId, e);
+            throw new RuntimeException("주문 상태 변경 이벤트 발행 실패: orderId=" + orderId, e);
+        }
     }
     
     /**
      * 주문 삭제(취소) 이벤트 발행
+     * 동기(Sync) 방식으로 전송하여 실패 시 예외를 발생시킴 -> 트랜잭션 롤백 유도
      * 
      * @param orderId 주문 ID (Kafka Key로 사용 - 순서 보장)
      * @param storeId 매장 ID
@@ -114,6 +148,7 @@ public class KafkaProducerService {
      * @param restoreStock 재고 복구 여부
      * @param orderItems 주문 상세 항목 리스트 (재고 복구 시 필요)
      * @param updatedBy 수정자
+     * @throws RuntimeException Kafka 이벤트 발행 실패 시 발생 (3초 이상 지연 시 TimeoutException 포함)
      */
     public void sendOrderDeletedEvent(
             Long orderId,
@@ -125,60 +160,35 @@ public class KafkaProducerService {
             java.util.List<OrderEvent.OrderItemEvent> orderItems,
             String updatedBy
     ) {
-        OrderEvent event = OrderEvent.builder()
-                .eventType(EventType.DELETE)
-                .orderId(orderId)
-                .storeId(storeId)
-                .userId(userId)
-                .previousStatus(previousStatus)
-                .newStatus(com.project.qr_order_system.model.OrderStatus.CANCELED)
-                .cancelReason(cancelReason)
-                .restoreStock(restoreStock)
-                .orderItems(orderItems)
-                .timestamp(java.time.LocalDateTime.now())
-                .updatedBy(updatedBy)
-                .build();
-        
-        sendEvent(orderId, event);
-    }
-    
-    /**
-     * Kafka에 이벤트 전송 (공통 메서드)
-     * orderId를 Key로 사용하여 같은 주문의 이벤트는 같은 파티션으로 전송됨 (순서 보장)
-     * 
-     * @param orderId 주문 ID (Kafka Key)
-     * @param event 주문 이벤트 객체
-     */
-    private void sendEvent(Long orderId, OrderEvent event) {
         try {
+            OrderEvent event = OrderEvent.builder()
+                    .eventType(EventType.DELETE)
+                    .orderId(orderId)
+                    .storeId(storeId)
+                    .userId(userId)
+                    .previousStatus(previousStatus)
+                    .newStatus(com.project.qr_order_system.model.OrderStatus.CANCELED)
+                    .cancelReason(cancelReason)
+                    .restoreStock(restoreStock)
+                    .orderItems(orderItems)
+                    .timestamp(java.time.LocalDateTime.now())
+                    .updatedBy(updatedBy)
+                    .build();
+            
             // orderId를 Key로 사용하여 순서 보장
             String key = String.valueOf(orderId);
             
-            CompletableFuture<SendResult<String, OrderEvent>> future = 
-                    kafkaTemplate.send(TOPIC_NAME, key, event);
+            // 동기 방식으로 전송 (최대 3초 대기)
+            // 3초 이상 지연되면 TimeoutException 발생
+            kafkaTemplate.send(TOPIC_NAME, key, event)
+                    .get(3, TimeUnit.SECONDS);
             
-            future.whenComplete((result, ex) -> {
-                if (ex == null) {
-                    log.info("주문 이벤트 발행 성공: orderId={}, eventType={}, partition={}, offset={}",
-                            orderId,
-                            event.getEventType(),
-                            result.getRecordMetadata().partition(),
-                            result.getRecordMetadata().offset());
-                } else {
-                    log.error("주문 이벤트 발행 실패: orderId={}, eventType={}",
-                            orderId,
-                            event.getEventType(),
-                            ex);
-                    // 실패해도 주문은 이미 저장되었으므로 예외를 던지지 않음
-                    // 필요시 Dead Letter Queue나 재시도 로직 추가 가능
-                }
-            });
+            log.info("주문 삭제 이벤트 발행 성공: orderId={}, eventType={}", 
+                    orderId, event.getEventType());
             
         } catch (Exception e) {
-            log.error("주문 이벤트 발행 중 예외 발생: orderId={}, eventType={}",
-                    orderId,
-                    event.getEventType(),
-                    e);
+            log.error("주문 삭제 이벤트 발행 실패! 트랜잭션을 롤백합니다. orderId={}", orderId, e);
+            throw new RuntimeException("주문 삭제 이벤트 발행 실패: orderId=" + orderId, e);
         }
     }
 }

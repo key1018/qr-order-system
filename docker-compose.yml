@@ -10,10 +10,23 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      # ==========================================
+      # ⚠️ 핵심 수정: 외부용(9092)과 내부용(29092) 포트 분리
+      # ==========================================
+      # 프로토콜 이름 정의 (외부: PLAINTEXT, 내부: PLAINTEXT_INTERNAL)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      # 클라이언트에게 알려줄 주소 (외부는 localhost, 내부는 컨테이너 이름 kafka)
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      # 실제 브로커가 리스닝할 포트
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      # 브로커 간 통신은 내부망 사용
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
       # order-events 토픽 자동 생성 설정
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       # 자동 생성되는 토픽의 기본 파티션 수 (3개)
@@ -45,7 +58,8 @@ services:
       - '8090:8080'
     environment:
       KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      # ⚠️ 핵심 수정: UI는 도커 내부망(29092)을 통해 접속
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     depends_on:
       - kafka

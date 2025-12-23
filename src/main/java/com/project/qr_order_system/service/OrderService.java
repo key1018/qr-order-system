@@ -8,15 +8,12 @@ import com.project.qr_order_system.model.*;
 import com.project.qr_order_system.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.query.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -35,6 +32,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final NotificationService notificationService;
     private final OrderRepositoryImpl orderRepositoryImpl;
+    private final KafkaProducerService kafkaProducerService;
 
 
     // =================================================================
@@ -99,6 +97,17 @@ public class OrderService {
         // 관리자에게 실시간 알림 전송
         notificationService.sendOrderAlert(store.getId(),"new-order", responseDto);
 
+        // Kafka 주문 생성 이벤트 발행
+        List<com.project.qr_order_system.dto.kafka.OrderEvent.OrderItemEvent> orderItemEvents = 
+                convertToOrderItemEvents(savedOrder.getOrderItems());
+        kafkaProducerService.sendOrderCreatedEvent(
+                savedOrder.getId(),
+                store.getId(),
+                user.getId(),
+                savedOrder.getTotalPrice(),
+                orderItemEvents
+        );
+
         return responseDto;
     }
 
@@ -121,6 +130,7 @@ public class OrderService {
             throw new IllegalArgumentException("이미 접수된 주문은 취소할 수 없습니다. 매장에 문의하세요.");
         }
 
+        OrderStatus previousStatus = cancelOrder.getStatus();
         cancelOrder.setStatus(OrderStatus.CANCELED);
         cancelOrder.setCancelReason(RejectReason.CUSTOMER_REQUEST_BEFORE_COOKING.getDescription());
 
@@ -140,6 +150,20 @@ public class OrderService {
 
         // 고객에게 실시간 알림 전송
         notificationService.sendCustomerOrderAlert(cancelOrder.getId(), updateDto);
+
+        // Kafka 주문 삭제(취소) 이벤트 발행
+        List<com.project.qr_order_system.dto.kafka.OrderEvent.OrderItemEvent> orderItemEvents = 
+                convertToOrderItemEvents(cancelOrder.getOrderItems());
+        kafkaProducerService.sendOrderDeletedEvent(
+                cancelOrder.getId(),
+                cancelOrder.getStore().getId(),
+                cancelOrder.getUser().getId(),
+                previousStatus,
+                cancelOrder.getCancelReason(),
+                false, // ORDERED 상태 취소는 재고 감소가 없었으므로 복구 불필요
+                orderItemEvents,
+                email
+        );
 
         log.info("고객 주문 취소 완료: OrderId={}", orderId);
 
@@ -198,6 +222,7 @@ public class OrderService {
         validateStoreOwner(storeId, email);
 
         // 주문 승낙 (주문 상태 변경)
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(OrderStatus.IN_PROGRESS);
 
         // 재고 감소 (주문 승낙시)
@@ -207,8 +232,6 @@ public class OrderService {
 
             product.removeStock(orderItem.getQuantity());
         }
-
-        OrderResponseDto responseDto = getOrderResponseDto(order);
 
         // 내 앞 대기 인원수 계산
         long watingP = orderRepository.countByStoreIdAndStatusAndIdLessThan(storeId,order.getStatus(),order.getId());
@@ -225,6 +248,20 @@ public class OrderService {
 
         // 고객에게 실시간 알림 전송
         notificationService.sendCustomerOrderAlert(order.getId(), updateDto);
+
+        // Kafka 주문 상태 변경 이벤트 발행
+        kafkaProducerService.sendOrderUpdatedEvent(
+                order.getId(),
+                order.getStore().getId(),
+                order.getUser().getId(),
+                previousStatus,
+                order.getStatus(),
+                (int)watingP,
+                watingM,
+                null, // 취소 사유 없음
+                false, // 재고 복구 불필요
+                email
+        );
 
         return getOrderResponseDto(order);
     }
@@ -246,6 +283,7 @@ public class OrderService {
         }
 
         // 주문 완료 (주문 상태 변경)
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(OrderStatus.READY);
         OrderResponseDto responseDto = getOrderResponseDto(order);
 
@@ -260,6 +298,20 @@ public class OrderService {
 
         // 고객에게 실시간 알림 전송
         notificationService.sendCustomerOrderAlert(order.getId(), completeDto);
+
+        // Kafka 주문 상태 변경 이벤트 발행
+        kafkaProducerService.sendOrderUpdatedEvent(
+                order.getId(),
+                order.getStore().getId(),
+                order.getUser().getId(),
+                previousStatus,
+                order.getStatus(),
+                0, // 대기 순위 없음
+                0, // 대기 시간 없음
+                null, // 취소 사유 없음
+                false, // 재고 복구 불필요
+                email
+        );
 
         // 뒷사람 대기인원,대기시간 줄이기
         updateBackWaitingPositionAndTime(storeId,email);
@@ -315,11 +367,15 @@ public class OrderService {
             throw new IllegalStateException("이미 완료되거나 취소된 주문입니다.");
         }
 
+        OrderStatus previousStatus = rejectOrder.getStatus();
+        boolean restoreStock = false;
+
         // 조리 중 / 완료시 취소
         if(rejectOrder.getStatus().equals(OrderStatus.IN_PROGRESS) || rejectOrder.getStatus().equals(OrderStatus.READY)) {
 
             if(reason.isRestoreStock()){
                 // IN_PROGRESS 상태지만 실제 조리가 들어가기 전 (재료 복구)
+                restoreStock = true;
                 for(OrderItemEntity orderItem : rejectOrder.getOrderItems()) {
                     ProductEntity product = orderItem.getProduct();
                     product.restoreStock(orderItem.getQuantity());
@@ -348,6 +404,20 @@ public class OrderService {
         // 고객에게 실시간 알림 전송
         notificationService.sendCustomerOrderAlert(rejectOrder.getId(), updateDto);
 
+        // Kafka 주문 삭제(취소/거절) 이벤트 발행
+        List<com.project.qr_order_system.dto.kafka.OrderEvent.OrderItemEvent> orderItemEvents = 
+                convertToOrderItemEvents(rejectOrder.getOrderItems());
+        kafkaProducerService.sendOrderDeletedEvent(
+                rejectOrder.getId(),
+                rejectOrder.getStore().getId(),
+                rejectOrder.getUser().getId(),
+                previousStatus,
+                rejectOrder.getCancelReason(),
+                restoreStock,
+                orderItemEvents,
+                email
+        );
+
         // 대기열 갱신 (중간에 빠졌으므로 뒷사람 갱신 필요)
         if (rejectOrder.getStatus() == OrderStatus.CANCELED || rejectOrder.getStatus() == OrderStatus.REJECTED) {
             updateBackWaitingPositionAndTime(storeId, email);
@@ -374,6 +444,7 @@ public class OrderService {
             throw new IllegalArgumentException("조리 완료된 주문만 완료할 수 있습니다.");
         }
 
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(OrderStatus.DONE); // 완료로 상태 변경
 
         OrderStatusUpdateDto updateDto = OrderStatusUpdateDto.builder()
@@ -385,6 +456,20 @@ public class OrderService {
                 .build();
 
         notificationService.sendCustomerOrderAlert(order.getId(), updateDto);
+
+        // Kafka 주문 상태 변경 이벤트 발행
+        kafkaProducerService.sendOrderUpdatedEvent(
+                order.getId(),
+                order.getStore().getId(),
+                order.getUser().getId(),
+                previousStatus,
+                order.getStatus(),
+                0, // 대기 순위 없음
+                0, // 대기 시간 없음
+                null, // 취소 사유 없음
+                false, // 재고 복구 불필요
+                email
+        );
 
         return getOrderResponseDto(order);
     }
@@ -585,5 +670,20 @@ public class OrderService {
                 .cancelReason(savedOrder.getCancelReason())
                 .usedCardName(savedOrder.getUsedCardName())
                 .build();
+    }
+
+    /**
+     * OrderItemEntity 리스트를 OrderEvent.OrderItemEvent 리스트로 변환하는 헬퍼 메서드
+     */
+    private List<com.project.qr_order_system.dto.kafka.OrderEvent.OrderItemEvent> convertToOrderItemEvents(
+            List<OrderItemEntity> orderItems) {
+        return orderItems.stream()
+                .map(item -> com.project.qr_order_system.dto.kafka.OrderEvent.OrderItemEvent.builder()
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProduct().getProductName())
+                        .quantity(item.getQuantity())
+                        .orderPrice(item.getOrderPrice())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
